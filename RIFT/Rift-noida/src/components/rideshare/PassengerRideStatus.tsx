@@ -88,19 +88,27 @@ export default function PassengerRideStatus({ passengerId }: PassengerRideStatus
     );
   }
 
+  // Show waiting rides at the top
+  const waitingRides = rides.filter((r) => r.status === "waiting");
+  const otherRides = rides.filter((r) => r.status !== "waiting");
+
   if (rides.length === 0) {
     return null; // Don't show anything if no rides
   }
 
-  // Show most recent ride first
-  const sortedRides = [...rides].sort(
+  // Show waiting rides first, then others (most recent first)
+  const sortedWaiting = [...waitingRides].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
+  const sortedOther = [...otherRides].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  const allRides = [...sortedWaiting, ...sortedOther];
 
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-slate-200">My Ride Bookings</h3>
-      {sortedRides.map((ride) => (
+      {allRides.map((ride) => (
         <div
           key={ride.id}
           className={`rounded-2xl border p-4 ${
@@ -124,13 +132,13 @@ export default function PassengerRideStatus({ passengerId }: PassengerRideStatus
             <div className="flex gap-2">
               <span className="shrink-0 text-slate-500">Pickup</span>
               <span className="text-slate-200">
-                {ride.pickup_place_name || `${ride.origin_lat.toFixed(4)}, ${ride.origin_lng.toFixed(4)}`}
+                {ride.pickup_place_name || "Location"}
               </span>
             </div>
             <div className="flex gap-2">
               <span className="shrink-0 text-slate-500">Destination</span>
               <span className="text-slate-200">
-                {ride.destination_place_name || `${ride.destination_lat.toFixed(4)}, ${ride.destination_lng.toFixed(4)}`}
+                {ride.destination_place_name || "Location"}
               </span>
             </div>
           </div>

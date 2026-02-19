@@ -71,13 +71,20 @@ export default function RealtimeRideList({
     [driverLat, driverLng]
   );
 
-  // Handle ride updates (e.g., when accepted by another driver)
+  // Handle ride updates (e.g., when accepted by driver or another driver)
   const handleRideUpdate = useCallback((ride: RideBookingRow) => {
-    // Remove from list if no longer waiting
+    // Remove from list if no longer waiting (accepted, completed, or cancelled)
     if (ride.status !== "waiting" || ride.driver_id) {
-      setRides((prev) => prev.filter((r) => r.id !== ride.id));
+      setRides((prev) => {
+        const filtered = prev.filter((r) => r.id !== ride.id);
+        // Clear accepting state if this was the ride being accepted
+        if (acceptingRideId === ride.id) {
+          setAcceptingRideId(null);
+        }
+        return filtered;
+      });
     }
-  }, []);
+  }, [acceptingRideId]);
 
   useEffect(() => {
     setError(null);
@@ -123,6 +130,12 @@ export default function RealtimeRideList({
       try {
         await acceptRide(rideId, driverId);
         // Ride will be removed from list via realtime UPDATE event
+        // Also optimistically remove it immediately to prevent stuck state
+        setRides((prev) => prev.filter((r) => r.id !== rideId));
+        // Clear accepting state after a short delay (in case realtime is slow)
+        setTimeout(() => {
+          setAcceptingRideId((current) => (current === rideId ? null : current));
+        }, 1000);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to accept ride");
         setAcceptingRideId(null);
@@ -181,13 +194,13 @@ export default function RealtimeRideList({
                 <div className="flex gap-2">
                   <span className="shrink-0 text-slate-500">Pickup</span>
                   <span className="text-slate-200">
-                    {ride.pickup_place_name || `${ride.origin_lat.toFixed(4)}, ${ride.origin_lng.toFixed(4)}`}
+                    {ride.pickup_place_name || "Pickup location"}
                   </span>
                 </div>
                 <div className="flex gap-2">
                   <span className="shrink-0 text-slate-500">Destination</span>
                   <span className="text-slate-200">
-                    {ride.destination_place_name || `${ride.destination_lat.toFixed(4)}, ${ride.destination_lng.toFixed(4)}`}
+                    {ride.destination_place_name || "Destination location"}
                   </span>
                 </div>
               </div>

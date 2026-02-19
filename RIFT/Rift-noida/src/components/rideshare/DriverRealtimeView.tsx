@@ -11,13 +11,24 @@ import RealtimeRideList from "./RealtimeRideList";
 type Prediction = { placeId: string; text: string };
 
 async function fetchPredictions(input: string): Promise<Prediction[]> {
-  const res = await fetch("/api/places", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input }),
-  });
-  const json = await res.json();
-  return json.predictions ?? [];
+  try {
+    const res = await fetch("/api/places", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ error: "Failed to fetch places" }));
+      throw new Error(errorData.error || "Failed to fetch places");
+    }
+
+    const json = await res.json().catch(() => ({ predictions: [] }));
+    return json.predictions ?? [];
+  } catch (error) {
+    console.error("Error fetching predictions:", error);
+    return [];
+  }
 }
 
 async function fetchPlaceDetails(placeId: string): Promise<{
@@ -26,14 +37,32 @@ async function fetchPlaceDetails(placeId: string): Promise<{
   lat: number;
   lng: number;
 }> {
-  const res = await fetch("/api/places/details", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ placeId }),
-  });
-  const json = await res.json();
-  if (json.error) throw new Error(json.error);
-  return json;
+  try {
+    const res = await fetch("/api/places/details", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ placeId }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ error: "Failed to fetch place details" }));
+      throw new Error(errorData.error || "Failed to fetch place details");
+    }
+
+    const json = await res.json().catch(() => {
+      throw new Error("Invalid response from server");
+    });
+
+    if (json.error) throw new Error(json.error);
+    if (!json.lat || !json.lng) {
+      throw new Error("Place location data is incomplete");
+    }
+
+    return json;
+  } catch (error) {
+    console.error("Error fetching place details:", error);
+    throw error;
+  }
 }
 
 function LocationIcon() {

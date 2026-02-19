@@ -6,7 +6,7 @@ import RideCard from "@/components/ui/RideCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import UserBadge from "@/components/ui/UserBadge";
 import RatingStars from "@/components/ui/RatingStars";
-import VerificationSection from "@/components/verification/VerificationSection";
+import VehicleDetailsForm from "./VehicleDetailsForm";
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
 import type { BookingRow, RideRequestRow, UserProfileRow } from "@/types";
 
@@ -141,10 +141,9 @@ export default function DriverDashboard({
           </div>
         </div>
 
-        {/* Mode Toggle */}
-        {/* Verify your identity */}
+        {/* Vehicle Details Form - Drivers verify vehicle, not identity */}
         <div className="mb-6">
-          <VerificationSection />
+          <VehicleDetailsForm userId={profile.id} />
         </div>
 
         <div className="flex gap-2 rounded-2xl border border-slate-200/10 bg-white/5 p-1">

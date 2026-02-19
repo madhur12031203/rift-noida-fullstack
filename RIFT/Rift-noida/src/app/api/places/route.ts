@@ -2,7 +2,18 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { input } = await req.json();
+    // Validate request body and parse JSON safely
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
+
+    const { input } = body;
 
     if (!input || typeof input !== "string" || input.trim().length < 3) {
       return NextResponse.json({ predictions: [] });
@@ -13,7 +24,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Missing Google Maps API key. Set GOOGLE_MAPS_API_KEY (preferred) or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY",
+            "Google Maps API key not configured. Please set GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment variable.",
         },
         { status: 500 }
       );
