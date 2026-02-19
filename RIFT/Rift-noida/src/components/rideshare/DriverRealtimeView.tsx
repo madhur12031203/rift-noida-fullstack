@@ -44,16 +44,46 @@ async function fetchPlaceDetails(placeId: string): Promise<{
       body: JSON.stringify({ placeId }),
     });
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ error: "Failed to fetch place details" }));
-      throw new Error(errorData.error || "Failed to fetch place details");
+    // Get response text first to safely parse JSON
+    const responseText = await res.text();
+    
+    if (!responseText) {
+      throw new Error("Empty response from server");
     }
 
-    const json = await res.json().catch(() => {
-      throw new Error("Invalid response from server");
-    });
+    // Safely parse JSON
+    let json;
+    try {
+      json = JSON.parse(responseText);
+    } catch (parseError) {
+      throw new Error("Invalid JSON response from server");
+    }
 
-    if (json.error) throw new Error(json.error);
+    // Check for HTTP errors
+    if (!res.ok) {
+      // Provide more helpful error messages based on status code
+      let errorMessage = json?.error || `Server error: ${res.status}`;
+      
+      if (res.status === 403 || res.status === 401) {
+        // Use the detailed error message from the API
+        errorMessage = json?.error || "Google Maps API key is invalid or not authorized";
+      } else if (res.status === 429) {
+        errorMessage = "API quota exceeded. Please try again later.";
+      } else if (res.status === 400) {
+        errorMessage = json?.error || "Invalid place selected. Please try another location.";
+      } else if (res.status === 500) {
+        errorMessage = json?.error || "Unable to fetch place details. Please try again.";
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    // Check for API-level errors
+    if (json.error) {
+      throw new Error(json.error);
+    }
+
+    // Validate required fields
     if (!json.lat || !json.lng) {
       throw new Error("Place location data is incomplete");
     }
@@ -61,7 +91,11 @@ async function fetchPlaceDetails(placeId: string): Promise<{
     return json;
   } catch (error) {
     console.error("Error fetching place details:", error);
-    throw error;
+    // Re-throw with user-friendly message
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to fetch place details. Please try again.");
   }
 }
 

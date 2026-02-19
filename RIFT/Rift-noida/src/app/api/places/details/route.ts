@@ -38,71 +38,143 @@ export async function POST(req: Request) {
       );
     }
 
-    // Fetch place details using Places API (New)
-    // The new Places API uses POST method with place ID in the request body
-    const res = await fetch(
-      "https://places.googleapis.com/v1/places:fetchFields",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask": "id,displayName,location",
-        },
-        body: JSON.stringify({
-          id: placeId,
-          languageCode: "en",
-        }),
-        cache: "no-store",
+    // Try fallback API first (standard Place Details API - more reliable)
+    try {
+      const fallbackRes = await fetch(
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,geometry&key=${apiKey}`,
+        { cache: "no-store" }
+      );
+      
+      const fallbackText = await fallbackRes.text();
+      if (fallbackText) {
+        try {
+          const fallbackData = JSON.parse(fallbackText);
+          
+          if (fallbackData.status === "OK" && fallbackData.result) {
+            const location = fallbackData.result.geometry?.location;
+            if (location?.lat && location?.lng) {
+              return NextResponse.json({
+                placeId: placeId,
+                placeName: fallbackData.result.name || fallbackData.result.formatted_address || "",
+                lat: location.lat,
+                lng: location.lng,
+              });
+            }
+          } else if (fallbackData.status === "REQUEST_DENIED") {
+            // Extract detailed error message
+            const errorMsg = fallbackData.error_message || "Google Maps API key is invalid or not authorized";
+            return NextResponse.json(
+              { 
+                error: `${errorMsg}. Status: ${fallbackData.status}. Please check:\n1. API key is correct\n2. Places API is enabled\n3. API key restrictions allow this request`
+              },
+              { status: 403 }
+            );
+          } else if (fallbackData.status === "INVALID_REQUEST") {
+            return NextResponse.json(
+              { error: `Invalid place ID: ${placeId}. ${fallbackData.error_message || ""}` },
+              { status: 400 }
+            );
+          } else if (fallbackData.status === "OVER_QUERY_LIMIT") {
+            return NextResponse.json(
+              { error: "Google Maps API quota exceeded. Please try again later." },
+              { status: 429 }
+            );
+          } else if (fallbackData.status === "ZERO_RESULTS") {
+            return NextResponse.json(
+              { error: "Place not found. Please try selecting a different location." },
+              { status: 404 }
+            );
+          }
+        } catch (parseError) {
+          // JSON parse failed, continue to new API
+        }
       }
-    );
+    } catch (fallbackError) {
+      // Fallback API failed, try new API
+    }
 
-    const data = await res.json();
+    // Try new Places API as fallback
+    try {
+      const res = await fetch(
+        "https://places.googleapis.com/v1/places:fetchFields",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": apiKey,
+            "X-Goog-FieldMask": "id,displayName,location",
+          },
+          body: JSON.stringify({
+            id: placeId,
+            languageCode: "en",
+          }),
+          cache: "no-store",
+        }
+      );
 
-    if (!res.ok) {
-      // Fallback: Try using the standard Place Details API (older but more reliable)
-      try {
-        const fallbackRes = await fetch(
-          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,geometry&key=${apiKey}`,
-          { cache: "no-store" }
-        );
-        const fallbackData = await fallbackRes.json();
-        
-        if (fallbackData.status === "OK" && fallbackData.result) {
-          const location = fallbackData.result.geometry?.location;
-          if (location?.lat && location?.lng) {
-            return NextResponse.json({
-              placeId: placeId,
-              placeName: fallbackData.result.name || "",
-              lat: location.lat,
-              lng: location.lng,
-            });
+      if (res.ok) {
+        const text = await res.text();
+        if (text) {
+          try {
+            const data = JSON.parse(text);
+            const location = data?.location;
+            
+            if (location?.latitude && location?.longitude) {
+              return NextResponse.json({
+                placeId: data.id || placeId,
+                placeName: data.displayName?.text || "",
+                lat: location.latitude,
+                lng: location.longitude,
+              });
+            }
+          } catch (parseError) {
+            // JSON parse failed
           }
         }
-      } catch {
-        // Ignore fallback errors
+      } else {
+        // Check for specific error codes - read response once
+        const text = await res.text();
+        let errorData: any = {};
+        try {
+          errorData = text ? JSON.parse(text) : {};
+        } catch {
+          // Ignore parse errors
+        }
+        
+        if (res.status === 403 || res.status === 401) {
+          let errorDetail = "Google Maps API key is invalid or not authorized";
+          
+          // Extract detailed error from Google's response
+          if (errorData.error?.message) {
+            errorDetail = errorData.error.message;
+          } else if (errorData.error?.status) {
+            errorDetail = `API Error: ${errorData.error.status}. ${errorData.error.message || ""}`;
+          }
+          
+          return NextResponse.json(
+            { 
+              error: `${errorDetail}. Please verify:\n1. API key is correct\n2. Places API (New) is enabled in Google Cloud Console\n3. API key has proper permissions\n4. API key restrictions allow this request`
+            },
+            { status: 403 }
+          );
+        } else if (res.status === 429) {
+          return NextResponse.json(
+            { error: "Google Maps API quota exceeded. Please try again later." },
+            { status: 429 }
+          );
+        }
       }
-      
-      return NextResponse.json(
-        { error: data?.error?.message || "Places API failed" },
-        { status: res.status }
-      );
+    } catch (fetchError) {
+      // New API also failed
     }
 
-    const location = data?.location;
-    if (!location?.latitude || !location?.longitude) {
-      return NextResponse.json(
-        { error: "Place location not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      placeId: data.id || placeId,
-      placeName: data.displayName?.text || "",
-      lat: location.latitude,
-      lng: location.longitude,
-    });
+    // Both APIs failed - provide helpful error message
+    return NextResponse.json(
+      { 
+        error: "Failed to fetch place details from Google Maps API. Please verify:\n1. Google Maps API key is set correctly\n2. Places API is enabled in Google Cloud Console\n3. API key has proper permissions and restrictions"
+      },
+      { status: 500 }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch place details" },
