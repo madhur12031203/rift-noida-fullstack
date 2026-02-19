@@ -35,15 +35,18 @@ export type RideRequestRow = {
   status: string;
 };
 
-/** Core realtime ride booking (passenger-initiated, lat/lng) */
+/** Core realtime ride booking (passenger-initiated, lat/lng + place names) */
 export type RideBookingRow = {
   id: string;
   passenger_id: string;
+  driver_id: string | null; // Set when driver accepts
   origin_lat: number;
   origin_lng: number;
   destination_lat: number;
   destination_lng: number;
-  status: "waiting" | "accepted" | "completed";
+  pickup_place_name: string | null; // Display name for pickup location
+  destination_place_name: string | null; // Display name for destination
+  status: "waiting" | "accepted" | "completed" | "cancelled";
   created_at: string;
 };
 

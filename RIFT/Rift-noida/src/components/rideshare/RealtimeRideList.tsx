@@ -1,14 +1,18 @@
 "use client";
 
 /**
- * Driver: Realtime list of nearby available rides.
+ * Driver: Realtime list of nearby available rides with Accept functionality.
  * - On page load: subscribe to Supabase Realtime INSERT on ride_bookings
  * - When Passenger books → ride appears instantly (no refresh, no polling)
  * - Filter: only show rides where distance (Haversine) ≤ 8 km from driver
+ * - Accept button: Driver clicks to accept ride (updates status to 'accepted')
+ * - Realtime updates: When ride is accepted, it's removed from waiting list
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
+  acceptRide,
   fetchWaitingRideBookings,
   haversineDistanceKm,
   subscribeToRideBookings,
@@ -24,10 +28,6 @@ type RealtimeRideListProps = {
   driverLng: number;
 };
 
-function formatCoords(lat: number, lng: number): string {
-  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-}
-
 export default function RealtimeRideList({
   driverLat,
   driverLng,
@@ -35,9 +35,24 @@ export default function RealtimeRideList({
   const [rides, setRides] = useState<RideWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [acceptingRideId, setAcceptingRideId] = useState<string | null>(null);
+  const [driverId, setDriverId] = useState<string | null>(null);
+
+  // Get current driver ID on mount
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setDriverId(data.user.id);
+      }
+    });
+  }, []);
 
   const addRideWithDistance = useCallback(
     (ride: RideBookingRow) => {
+      // Only add waiting rides that haven't been accepted
+      if (ride.status !== "waiting" || ride.driver_id) return;
+      
       const distanceKm = haversineDistanceKm(
         driverLat,
         driverLng,
@@ -55,6 +70,14 @@ export default function RealtimeRideList({
     },
     [driverLat, driverLng]
   );
+
+  // Handle ride updates (e.g., when accepted by another driver)
+  const handleRideUpdate = useCallback((ride: RideBookingRow) => {
+    // Remove from list if no longer waiting
+    if (ride.status !== "waiting" || ride.driver_id) {
+      setRides((prev) => prev.filter((r) => r.id !== ride.id));
+    }
+  }, []);
 
   useEffect(() => {
     setError(null);
@@ -80,10 +103,33 @@ export default function RealtimeRideList({
   }, [driverLat, driverLng]);
 
   // REALTIME: Subscribe on mount. New rides from Passenger appear here without refresh.
+  // Also listen for UPDATE events (e.g., when ride is accepted by another driver).
   useEffect(() => {
-    const unsubscribe = subscribeToRideBookings(addRideWithDistance);
+    const unsubscribe = subscribeToRideBookings(addRideWithDistance, handleRideUpdate);
     return unsubscribe;
-  }, [addRideWithDistance]);
+  }, [addRideWithDistance, handleRideUpdate]);
+
+  // Handle Accept Ride click
+  const handleAcceptRide = useCallback(
+    async (rideId: string) => {
+      if (!driverId) {
+        setError("Please sign in to accept rides");
+        return;
+      }
+
+      setAcceptingRideId(rideId);
+      setError(null);
+
+      try {
+        await acceptRide(rideId, driverId);
+        // Ride will be removed from list via realtime UPDATE event
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to accept ride");
+        setAcceptingRideId(null);
+      }
+    },
+    [driverId]
+  );
 
   if (loading) {
     return (
@@ -131,20 +177,31 @@ export default function RealtimeRideList({
                   {ride.distanceKm.toFixed(2)} km
                 </span>
               </div>
-              <div className="space-y-2 text-sm">
+              <div className="mb-3 space-y-2 text-sm">
                 <div className="flex gap-2">
                   <span className="shrink-0 text-slate-500">Pickup</span>
                   <span className="text-slate-200">
-                    {formatCoords(ride.origin_lat, ride.origin_lng)}
+                    {ride.pickup_place_name || `${ride.origin_lat.toFixed(4)}, ${ride.origin_lng.toFixed(4)}`}
                   </span>
                 </div>
                 <div className="flex gap-2">
                   <span className="shrink-0 text-slate-500">Destination</span>
                   <span className="text-slate-200">
-                    {formatCoords(ride.destination_lat, ride.destination_lng)}
+                    {ride.destination_place_name || `${ride.destination_lat.toFixed(4)}, ${ride.destination_lng.toFixed(4)}`}
                   </span>
                 </div>
               </div>
+              {/* Accept Ride Button - Only show for waiting rides */}
+              {ride.status === "waiting" && !ride.driver_id && (
+                <button
+                  type="button"
+                  onClick={() => void handleAcceptRide(ride.id)}
+                  disabled={acceptingRideId === ride.id || !driverId}
+                  className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {acceptingRideId === ride.id ? "Accepting..." : "Accept Ride"}
+                </button>
+              )}
             </article>
           ))}
         </div>

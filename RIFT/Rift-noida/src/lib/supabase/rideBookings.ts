@@ -34,6 +34,7 @@ export function haversineDistanceKm(
 /**
  * Passenger: Insert a new ride booking.
  * Status is set to 'waiting' so Drivers see it in their realtime list.
+ * Now includes place names for better UX (users see names, not coordinates).
  */
 export async function createRideBooking(input: {
   passengerId: string;
@@ -41,6 +42,8 @@ export async function createRideBooking(input: {
   originLng: number;
   destinationLat: number;
   destinationLng: number;
+  pickupPlaceName?: string | null;
+  destinationPlaceName?: string | null;
 }): Promise<RideBookingRow> {
   const { data, error } = await supabase
     .from("ride_bookings")
@@ -50,12 +53,42 @@ export async function createRideBooking(input: {
       origin_lng: input.originLng,
       destination_lat: input.destinationLat,
       destination_lng: input.destinationLng,
+      pickup_place_name: input.pickupPlaceName ?? null,
+      destination_place_name: input.destinationPlaceName ?? null,
       status: "waiting",
     })
     .select()
     .single();
 
   if (error) throw error;
+  return data as RideBookingRow;
+}
+
+/**
+ * Driver: Accept a ride by updating status to 'accepted' and setting driver_id.
+ * Security: Only authenticated drivers can accept, and only waiting rides can be accepted.
+ * A ride can only be accepted once (driver_id is set).
+ */
+export async function acceptRide(rideId: string, driverId: string): Promise<RideBookingRow> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .update({
+      status: "accepted",
+      driver_id: driverId,
+    })
+    .eq("id", rideId)
+    .eq("status", "waiting") // Only accept if still waiting (prevents double-accept)
+    .select()
+    .single();
+
+  if (error) {
+    // If no rows updated, ride was already accepted or doesn't exist
+    if (error.code === "PGRST116") {
+      throw new Error("Ride is no longer available (already accepted or cancelled)");
+    }
+    throw error;
+  }
+
   return data as RideBookingRow;
 }
 
@@ -69,7 +102,8 @@ export async function createRideBooking(input: {
  * contains the new row. We add it to state → UI updates instantly.
  */
 export function subscribeToRideBookings(
-  onInsert: (ride: RideBookingRow) => void
+  onInsert: (ride: RideBookingRow) => void,
+  onUpdate?: (ride: RideBookingRow) => void
 ): () => void {
   const channel = supabase
     .channel("ride_bookings_realtime")
@@ -88,6 +122,51 @@ export function subscribeToRideBookings(
         }
       }
     )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "ride_bookings",
+      },
+      (payload) => {
+        // When ride status changes (e.g., accepted), notify listeners
+        const ride = payload.new as RideBookingRow;
+        if (onUpdate) {
+          onUpdate(ride);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+/**
+ * Passenger: Subscribe to UPDATE events on their own rides.
+ * When driver accepts, status changes to 'accepted' → Passenger sees instantly.
+ */
+export function subscribeToMyRideBookings(
+  passengerId: string,
+  onUpdate: (ride: RideBookingRow) => void
+): () => void {
+  const channel = supabase
+    .channel("my_ride_bookings_realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "ride_bookings",
+        filter: `passenger_id=eq.${passengerId}`,
+      },
+      (payload) => {
+        const ride = payload.new as RideBookingRow;
+        onUpdate(ride);
+      }
+    )
     .subscribe();
 
   return () => {
@@ -104,6 +183,20 @@ export async function fetchWaitingRideBookings(): Promise<RideBookingRow[]> {
     .from("ride_bookings")
     .select("*")
     .eq("status", "waiting")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as RideBookingRow[];
+}
+
+/**
+ * Passenger: Fetch their own ride bookings (to see status updates).
+ */
+export async function fetchMyRideBookings(passengerId: string): Promise<RideBookingRow[]> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .select("*")
+    .eq("passenger_id", passengerId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;

@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import BookRideForm from "./BookRideForm";
 import DriverRealtimeView from "./DriverRealtimeView";
+import PassengerRideStatus from "./PassengerRideStatus";
 import RoleSelector from "./RoleSelector";
 import { createRideBooking } from "@/lib/supabase/rideBookings";
 import { ensureUserProfile, updateRole } from "@/lib/supabase/rideshare";
@@ -56,6 +57,8 @@ export default function CoreRideSharePanel() {
       originLng: number;
       destinationLat: number;
       destinationLng: number;
+      pickupPlaceName?: string | null;
+      destinationPlaceName?: string | null;
     }) => {
       if (!profile?.id) return;
       setIsBusy(true);
@@ -96,11 +99,15 @@ export default function CoreRideSharePanel() {
       )}
 
       {role === "passenger" ? (
-        <BookRideForm
-          passengerId={profile.id}
-          onBookRide={handleBookRide}
-          isBusy={isBusy}
-        />
+        <div className="space-y-6">
+          <BookRideForm
+            passengerId={profile.id}
+            onBookRide={handleBookRide}
+            isBusy={isBusy}
+          />
+          {/* Show passenger's ride bookings with realtime status updates */}
+          <PassengerRideStatus passengerId={profile.id} />
+        </div>
       ) : (
         <DriverRealtimeView />
       )}
