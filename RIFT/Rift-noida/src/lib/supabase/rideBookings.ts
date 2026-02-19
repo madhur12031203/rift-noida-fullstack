@@ -324,7 +324,12 @@ export async function markDriverCompleted(
     .select("*")
     .single();
 
-  if (updateError) throw updateError;
+  if (updateError) {
+    if (updateError.code === "PGRST116") {
+      throw new Error("Ride is no longer available to complete. Refresh and try again.");
+    }
+    throw updateError;
+  }
   const ride = updated as RideBookingRow;
   return maybeFinalizeRideCompletion(ride);
 }
@@ -342,7 +347,12 @@ export async function markPassengerCompleted(
     .select("*")
     .single();
 
-  if (updateError) throw updateError;
+  if (updateError) {
+    if (updateError.code === "PGRST116") {
+      throw new Error("Ride is no longer available to complete. Refresh and try again.");
+    }
+    throw updateError;
+  }
   const ride = updated as RideBookingRow;
   return maybeFinalizeRideCompletion(ride);
 }
@@ -362,6 +372,11 @@ async function maybeFinalizeRideCompletion(
     .select("*")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (error.code === "PGRST116") {
+      return { ride, shouldReleasePayment: false };
+    }
+    throw error;
+  }
   return { ride: data as RideBookingRow, shouldReleasePayment: true };
 }

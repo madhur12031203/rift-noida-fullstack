@@ -26,6 +26,17 @@ type CoreRideSharePanelProps = {
   appAddress: string;
 };
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string" && maybeMessage.length > 0) {
+      return maybeMessage;
+    }
+  }
+  return fallback;
+}
+
 function estimateRideFare(ride: RideBookingRow): number {
   const kmPerDegree = 111;
   const distanceKm =
@@ -145,12 +156,21 @@ export default function CoreRideSharePanel({
       try {
         const result = await markPassengerCompleted(ride.id, profile.id);
         if (result.shouldReleasePayment) {
-          await releasePayment(result.ride);
+          try {
+            await releasePayment(result.ride);
+          } catch (releaseError) {
+            setError(
+              `Ride marked completed, but payment release failed: ${getErrorMessage(
+                releaseError,
+                "Unknown payment error"
+              )}`
+            );
+          }
           setPassengerHasActiveRide(false);
         }
         await refreshProfile();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to complete ride");
+        setError(getErrorMessage(err, "Failed to complete ride"));
       } finally {
         setIsBusy(false);
       }
@@ -167,11 +187,20 @@ export default function CoreRideSharePanel({
       try {
         const result = await markDriverCompleted(ride.id, profile.id);
         if (result.shouldReleasePayment) {
-          await releasePayment(result.ride);
+          try {
+            await releasePayment(result.ride);
+          } catch (releaseError) {
+            setError(
+              `Ride marked completed, but payment release failed: ${getErrorMessage(
+                releaseError,
+                "Unknown payment error"
+              )}`
+            );
+          }
         }
         await refreshProfile();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to complete ride");
+        setError(getErrorMessage(err, "Failed to complete ride"));
       } finally {
         setIsBusy(false);
       }
