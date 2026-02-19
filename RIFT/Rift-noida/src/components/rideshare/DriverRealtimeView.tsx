@@ -65,7 +65,7 @@ async function fetchPlaceDetails(placeId: string): Promise<{
     let json;
     try {
       json = JSON.parse(responseText);
-    } catch (parseError) {
+    } catch {
       throw new Error("Invalid JSON response from server");
     }
 
@@ -222,7 +222,7 @@ export default function DriverRealtimeView({
           
           setDriverLat(lat);
           setDriverLng(lng);
-        } catch (err) {
+        } catch {
           setError("Could not get location name");
         } finally {
           setIsLoadingPlaceDetails(false);

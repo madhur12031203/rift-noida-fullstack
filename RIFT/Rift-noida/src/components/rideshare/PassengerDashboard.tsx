@@ -139,13 +139,6 @@ export default function PassengerDashboard({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const suggestions =
-    activeField === "source"
-      ? sourceSuggestions
-      : activeField === "destination"
-        ? destinationSuggestions
-        : [];
-
   function pickSuggestion(text: string) {
     if (activeField === "source") setSource(text);
     if (activeField === "destination") setDestination(text);

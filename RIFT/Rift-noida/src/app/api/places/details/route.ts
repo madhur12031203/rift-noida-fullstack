@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     let body;
     try {
       body = await req.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { error: "Invalid JSON in request body" },
         { status: 400 }
@@ -85,11 +85,11 @@ export async function POST(req: Request) {
               { status: 404 }
             );
           }
-        } catch (parseError) {
+        } catch {
           // JSON parse failed, continue to new API
         }
       }
-    } catch (fallbackError) {
+    } catch {
       // Fallback API failed, try new API
     }
 
@@ -127,14 +127,14 @@ export async function POST(req: Request) {
                 lng: location.longitude,
               });
             }
-          } catch (parseError) {
+          } catch {
             // JSON parse failed
           }
         }
       } else {
         // Check for specific error codes - read response once
         const text = await res.text();
-        let errorData: any = {};
+        let errorData: { error?: { message?: string; status?: string } } = {};
         try {
           errorData = text ? JSON.parse(text) : {};
         } catch {
@@ -164,7 +164,7 @@ export async function POST(req: Request) {
           );
         }
       }
-    } catch (fetchError) {
+    } catch {
       // New API also failed
     }
 

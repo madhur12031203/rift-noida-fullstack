@@ -38,7 +38,7 @@ export default function AdminVerificationsPage() {
         }
         setIsAdmin(true);
         await loadVerifications();
-      } catch (err) {
+      } catch {
         setIsAdmin(false);
         setError("Failed to verify admin access");
       }

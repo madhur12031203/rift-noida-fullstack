@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     let body;
     try {
       body = await req.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { error: "Invalid JSON in request body" },
         { status: 400 }
@@ -53,14 +53,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const predictions =
-      data?.suggestions
-        ?.map((s: any) => s?.placePrediction)
-        ?.filter(Boolean)
-        ?.map((p: any) => ({
-          placeId: p.placeId,
-          text: p.text?.text || "",
-        })) ?? [];
+    type PlacePrediction = {
+      placeId?: string;
+      text?: { text?: string };
+    };
+    type PlaceSuggestion = { placePrediction?: PlacePrediction };
+    const suggestions = (data?.suggestions ?? []) as PlaceSuggestion[];
+    const predictions = suggestions
+      .map((s) => s.placePrediction)
+      .filter((p): p is PlacePrediction => Boolean(p?.placeId))
+      .map((p) => ({
+        placeId: p.placeId as string,
+        text: p.text?.text || "",
+      }));
 
     return NextResponse.json({ predictions });
   } catch {

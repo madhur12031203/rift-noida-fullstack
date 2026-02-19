@@ -20,6 +20,10 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function getErrorMessage(err: unknown, fallback: string): string {
+    return err instanceof Error ? err.message : fallback;
+  }
+
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -71,8 +75,8 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
         if (signInError) throw signInError;
         router.push(redirectTo);
       }
-    } catch (err: any) {
-      setError(err.message || "Authentication failed. Please try again.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Authentication failed. Please try again."));
     } finally {
       setIsLoading(false);
     }
@@ -182,8 +186,8 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
                     if (error) throw error;
                     setError(null);
                     alert("Password reset email sent! Check your inbox.");
-                  } catch (err: any) {
-                    setError(err.message || "Failed to send reset email");
+                  } catch (err: unknown) {
+                    setError(getErrorMessage(err, "Failed to send reset email"));
                   }
                 }}
                 className="text-xs text-blue-400 transition hover:text-blue-300"

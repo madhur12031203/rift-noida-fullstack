@@ -57,7 +57,7 @@ async function fetchPlaceDetails(placeId: string): Promise<{
     let json;
     try {
       json = JSON.parse(responseText);
-    } catch (parseError) {
+    } catch {
       throw new Error("Invalid JSON response from server");
     }
 
@@ -265,7 +265,7 @@ export default function BookRideForm({
           
           // Store coordinates (we'll use these directly)
           setOriginPlaceId(`manual_${lat}_${lng}`);
-        } catch (err) {
+        } catch {
           setError("Could not get location name");
         } finally {
           setIsLoadingPlaceDetails(false);
@@ -294,11 +294,12 @@ export default function BookRideForm({
     setIsLoadingPlaceDetails(true);
 
     try {
-      let originLat: number, originLng: number, destLat: number, destLng: number;
+      let originLat: number;
+      let originLng: number;
 
       // If manual location (from geolocation), extract from placeId
       if (originPlaceId.startsWith("manual_")) {
-        const [_, lat, lng] = originPlaceId.split("_");
+        const [, lat, lng] = originPlaceId.split("_");
         originLat = parseFloat(lat);
         originLng = parseFloat(lng);
       } else {
@@ -308,8 +309,8 @@ export default function BookRideForm({
       }
 
       const destDetails = await fetchPlaceDetails(destinationPlaceId);
-      destLat = destDetails.lat;
-      destLng = destDetails.lng;
+      const destLat = destDetails.lat;
+      const destLng = destDetails.lng;
 
       await onBookRide({
         originLat,

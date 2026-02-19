@@ -62,7 +62,25 @@ export default function UserProfilePage() {
         .eq("to_user_id", targetUserId)
         .order("created_at", { ascending: false });
 
-      setRatings(ratingsData || []);
+      type RawRating = {
+        id: string;
+        rating: number;
+        comment: string | null;
+        from_user_id: string;
+        created_at: string;
+        from_user: { name: string | null }[] | { name: string | null } | null;
+      };
+      const normalizedRatings: RatingRow[] = (ratingsData as RawRating[] | null | undefined ?? []).map((row) => ({
+        id: row.id,
+        rating: row.rating,
+        comment: row.comment,
+        from_user_id: row.from_user_id,
+        created_at: row.created_at,
+        from_user: Array.isArray(row.from_user)
+          ? (row.from_user[0] ?? null)
+          : row.from_user,
+      }));
+      setRatings(normalizedRatings);
     } catch (error) {
       console.error("Failed to load profile:", error);
     } finally {

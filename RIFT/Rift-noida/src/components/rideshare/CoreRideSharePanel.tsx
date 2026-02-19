@@ -190,7 +190,7 @@ export default function CoreRideSharePanel({
         setIsBusy(false);
       }
     },
-    [profile?.id, refreshProfile, releasePayment]
+    [profile?.id, pushToast, refreshProfile, releasePayment]
   );
 
   const handleDriverComplete = useCallback(
@@ -221,7 +221,7 @@ export default function CoreRideSharePanel({
         setIsBusy(false);
       }
     },
-    [profile?.id, refreshProfile, releasePayment]
+    [profile?.id, pushToast, refreshProfile, releasePayment]
   );
 
   if (!profile) {

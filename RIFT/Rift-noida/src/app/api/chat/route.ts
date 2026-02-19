@@ -56,9 +56,10 @@ export async function POST(req: Request) {
       },
       { status: lastStatus }
     );
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: "Chat failed", detail: String(e?.message || e) },
+      { error: "Chat failed", detail: message },
       { status: 500 }
     );
   }

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { ensureUserProfile } from "@/lib/supabase/rideshare";
 import RatingStars from "@/components/ui/RatingStars";
@@ -27,7 +26,7 @@ export default function ProfilePage() {
   const [ratings, setRatings] = useState<RatingRow[]>([]);
   const [verifications, setVerifications] = useState<{ status: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [authUser, setAuthUser] = useState<any>(null);
+  const [authUser, setAuthUser] = useState<{ email?: string } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -63,7 +62,25 @@ export default function ProfilePage() {
         .eq("to_user_id", userId)
         .order("created_at", { ascending: false });
 
-      setRatings(ratingsData || []);
+      type RawRating = {
+        id: string;
+        rating: number;
+        comment: string | null;
+        from_user_id: string;
+        created_at: string;
+        from_user: { name: string | null }[] | { name: string | null } | null;
+      };
+      const normalizedRatings: RatingRow[] = (ratingsData as RawRating[] | null | undefined ?? []).map((row) => ({
+        id: row.id,
+        rating: row.rating,
+        comment: row.comment,
+        from_user_id: row.from_user_id,
+        created_at: row.created_at,
+        from_user: Array.isArray(row.from_user)
+          ? (row.from_user[0] ?? null)
+          : row.from_user,
+      }));
+      setRatings(normalizedRatings);
 
       const { data: verificationsData } = await supabase
         .from("user_verifications")

@@ -74,7 +74,7 @@ export default function PassengerRideStatus({
     });
 
     return unsubscribe;
-  }, [passengerId]);
+  }, [onToast, passengerId]);
 
   const activeRide = useMemo(() => {
     const candidates = rides

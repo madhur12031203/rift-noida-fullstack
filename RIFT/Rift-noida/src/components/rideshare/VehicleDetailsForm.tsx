@@ -7,7 +7,7 @@
  * This replaces identity verification for drivers.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type DriverVehicle = {
@@ -34,14 +34,10 @@ export default function VehicleDetailsForm({ userId }: VehicleDetailsFormProps) 
   const [numberOfSeats, setNumberOfSeats] = useState(4);
   const [drivingLicense, setDrivingLicense] = useState("");
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Load existing vehicle details
-  useEffect(() => {
-    loadVehicleDetails();
-  }, [userId]);
-
-  async function loadVehicleDetails() {
+  const loadVehicleDetails = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error: fetchError } = await supabase
@@ -66,7 +62,11 @@ export default function VehicleDetailsForm({ userId }: VehicleDetailsFormProps) 
     } finally {
       setLoading(false);
     }
-  }
+  }, [supabase, userId]);
+
+  useEffect(() => {
+    void loadVehicleDetails();
+  }, [loadVehicleDetails]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

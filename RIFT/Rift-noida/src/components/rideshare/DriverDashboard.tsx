@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import BottomActionBar from "@/components/ui/BottomActionBar";
 import RideCard from "@/components/ui/RideCard";
 import StatusBadge from "@/components/ui/StatusBadge";
-import UserBadge from "@/components/ui/UserBadge";
 import RatingStars from "@/components/ui/RatingStars";
 import VehicleDetailsForm from "./VehicleDetailsForm";
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -248,7 +247,7 @@ export default function DriverDashboard({
           {!isAvailable && waitingRequests.length === 0 && (
             <div className="mb-6 rounded-2xl border border-slate-200/10 bg-white/5 p-6 text-center">
               <p className="text-sm text-slate-400">
-                Enter your location and tap "Go Online" to see nearby ride requests
+                Enter your location and tap &quot;Go Online&quot; to see nearby ride requests
               </p>
             </div>
           )}

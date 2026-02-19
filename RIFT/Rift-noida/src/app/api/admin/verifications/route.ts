@@ -97,7 +97,7 @@ export async function GET(request: Request) {
     created_at: v.created_at,
     reviewed_at: v.reviewed_at,
     user_email: emailsByUserId[v.user_id] || null,
-    user_name: v.users?.name || null,
+    user_name: Array.isArray(v.users) ? (v.users[0]?.name ?? null) : null,
   }));
 
   return NextResponse.json({ verifications });
