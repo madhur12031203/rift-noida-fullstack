@@ -10,7 +10,7 @@ type WalletPanelProps = {
 };
 
 function shortenAddress(value: string): string {
-  return `${value.slice(0, 6)}...${value.slice(-6)}`;
+  return `${value.slice(0, 4)}...${value.slice(-3)}`;
 }
 
 function WalletIcon() {
@@ -76,7 +76,7 @@ export default function WalletPanel({
                 {shortenAddress(address)}
               </p>
             ) : (
-              <p className="mt-0.5 text-sm text-slate-300">Not connected</p>
+              <p className="mt-0.5 text-sm text-slate-300">Connect Wallet</p>
             )}
           </div>
         </div>
@@ -98,7 +98,7 @@ export default function WalletPanel({
             disabled={isConnecting}
             className="min-h-[44px] rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isConnecting ? "Connecting..." : "Connect"}
+            {isConnecting ? "Connecting..." : "Connect Wallet"}
           </button>
         )}
       </div>

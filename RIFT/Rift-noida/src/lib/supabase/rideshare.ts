@@ -54,6 +54,12 @@ export async function updateWalletAddress(userId: string, walletAddress: string 
     .update({ wallet_address: walletAddress })
     .eq("id", userId);
   if (error) throw error;
+
+  // Best effort compatibility for deployments using a `profiles` table.
+  await supabase
+    .from("profiles")
+    .update({ wallet_address: walletAddress })
+    .eq("id", userId);
 }
 
 export async function createRideOffer(input: {
@@ -220,4 +226,3 @@ export async function submitRating(input: {
     .eq("id", input.toUserId);
   if (userUpdateError) throw userUpdateError;
 }
-

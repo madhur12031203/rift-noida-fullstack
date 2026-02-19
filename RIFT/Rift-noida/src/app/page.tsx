@@ -9,7 +9,6 @@ import ResultCard from "@/components/ResultCard";
 import VideoBackground from "@/components/VideoBackground";
 import WalletPanel from "@/components/WalletPanel";
 import CoreRideSharePanel from "@/components/rideshare/CoreRideSharePanel";
-import RideSharePanel from "@/components/rideshare/RideSharePanel";
 import { createClient } from "@/lib/supabase/client";
 import type { FareResult, LocationInput } from "@/types";
 
@@ -26,7 +25,6 @@ export default function Home() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSignedIn, setIsSignedIn] = useState(false);
 
-  const appId = Number(process.env.NEXT_PUBLIC_RIDE_ESCROW_APP_ID ?? 0);
   const appAddress = process.env.NEXT_PUBLIC_RIDE_ESCROW_APP_ADDRESS ?? "";
 
   useEffect(() => {
@@ -134,12 +132,7 @@ export default function Home() {
           <h2 className="mb-4 text-lg font-semibold text-slate-100 sm:text-xl">
             Realtime Ride Booking
           </h2>
-          <CoreRideSharePanel />
-        </div>
-
-        {/* Legacy Ride Share Panel (wallet, escrow, etc.) */}
-        <div className="mb-8">
-          <RideSharePanel walletAddress={walletAddress} appId={appId} appAddress={appAddress} />
+          <CoreRideSharePanel walletAddress={walletAddress} appAddress={appAddress} />
         </div>
 
         {/* Fare Comparison Section */}

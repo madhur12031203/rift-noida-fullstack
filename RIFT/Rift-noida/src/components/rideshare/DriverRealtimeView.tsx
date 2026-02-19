@@ -7,6 +7,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import RealtimeRideList from "./RealtimeRideList";
+import type { RideBookingRow } from "@/types";
+
+type DriverRealtimeViewProps = {
+  isBusy: boolean;
+  onCompleteRide: (ride: RideBookingRow) => Promise<void>;
+  paymentMessage?: string | null;
+};
 
 type Prediction = { placeId: string; text: string };
 
@@ -108,7 +115,11 @@ function LocationIcon() {
   );
 }
 
-export default function DriverRealtimeView() {
+export default function DriverRealtimeView({
+  isBusy,
+  onCompleteRide,
+  paymentMessage,
+}: DriverRealtimeViewProps) {
   const [driverLat, setDriverLat] = useState<number | null>(null);
   const [driverLng, setDriverLng] = useState<number | null>(null);
   const [locationName, setLocationName] = useState("");
@@ -291,7 +302,13 @@ export default function DriverRealtimeView() {
               Change
             </button>
           </div>
-          <RealtimeRideList driverLat={driverLat} driverLng={driverLng} />
+          <RealtimeRideList
+            driverLat={driverLat}
+            driverLng={driverLng}
+            isBusy={isBusy}
+            onCompleteRide={onCompleteRide}
+            paymentMessage={paymentMessage}
+          />
         </>
       )}
     </div>

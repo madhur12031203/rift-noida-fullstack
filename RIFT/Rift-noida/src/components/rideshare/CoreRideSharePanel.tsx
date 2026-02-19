@@ -11,28 +11,65 @@ import BookRideForm from "./BookRideForm";
 import DriverRealtimeView from "./DriverRealtimeView";
 import PassengerRideStatus from "./PassengerRideStatus";
 import RoleSelector from "./RoleSelector";
-import { createRideBooking } from "@/lib/supabase/rideBookings";
-import { ensureUserProfile, updateRole } from "@/lib/supabase/rideshare";
-import type { UserProfileRow, UserRole } from "@/types";
+import {
+  createRideBooking,
+  fetchPassengerActiveRide,
+  markDriverCompleted,
+  markPassengerCompleted,
+} from "@/lib/supabase/rideBookings";
+import { sendEscrowPayment } from "@/lib/algorand/escrow";
+import { ensureUserProfile, updateRole, updateWalletAddress } from "@/lib/supabase/rideshare";
+import type { RideBookingRow, UserProfileRow, UserRole } from "@/types";
 
-export default function CoreRideSharePanel() {
+type CoreRideSharePanelProps = {
+  walletAddress: string | null;
+  appAddress: string;
+};
+
+function estimateRideFare(ride: RideBookingRow): number {
+  const kmPerDegree = 111;
+  const distanceKm =
+    Math.sqrt(
+      (ride.destination_lat - ride.origin_lat) ** 2 +
+        (ride.destination_lng - ride.origin_lng) ** 2
+    ) * kmPerDegree;
+  return Math.max(40, Math.round(distanceKm * 12 + 20));
+}
+
+export default function CoreRideSharePanel({
+  walletAddress,
+  appAddress,
+}: CoreRideSharePanelProps) {
   const [profile, setProfile] = useState<UserProfileRow | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRoleSaving, setIsRoleSaving] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
+  const [passengerHasActiveRide, setPassengerHasActiveRide] = useState(false);
 
   const role = profile?.role ?? null;
 
   const refreshProfile = useCallback(async () => {
-    const next = await ensureUserProfile();
+    const next = await ensureUserProfile(walletAddress);
     setProfile(next);
-  }, []);
+    if (next?.role === "passenger") {
+      const activeRide = await fetchPassengerActiveRide(next.id);
+      setPassengerHasActiveRide(Boolean(activeRide));
+    } else {
+      setPassengerHasActiveRide(false);
+    }
+  }, [walletAddress]);
 
   useEffect(() => {
     void refreshProfile().catch((err: unknown) => {
       setError(err instanceof Error ? err.message : "Failed to load profile");
     });
-  }, [refreshProfile]);
+  }, [refreshProfile, walletAddress]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    void updateWalletAddress(profile.id, walletAddress ?? null).catch(() => undefined);
+  }, [profile?.id, walletAddress]);
 
   const handlePickRole = useCallback(
     async (nextRole: UserRole) => {
@@ -68,6 +105,8 @@ export default function CoreRideSharePanel() {
           passengerId: profile.id,
           ...input,
         });
+        setPassengerHasActiveRide(true);
+        await refreshProfile();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to book ride");
         throw err;
@@ -75,7 +114,69 @@ export default function CoreRideSharePanel() {
         setIsBusy(false);
       }
     },
-    [profile?.id]
+    [profile?.id, refreshProfile]
+  );
+
+  const releasePayment = useCallback(
+    async (ride: RideBookingRow) => {
+      if (!walletAddress) {
+        throw new Error("Connect Wallet");
+      }
+      if (!appAddress) {
+        throw new Error("Escrow app address is not configured");
+      }
+
+      await sendEscrowPayment({
+        senderAddress: walletAddress,
+        appAddress,
+        fare: estimateRideFare(ride),
+      });
+      setPaymentMessage("Payment released successfully");
+    },
+    [appAddress, walletAddress]
+  );
+
+  const handlePassengerComplete = useCallback(
+    async (ride: RideBookingRow) => {
+      if (!profile?.id) return;
+      setIsBusy(true);
+      setError(null);
+      setPaymentMessage(null);
+      try {
+        const result = await markPassengerCompleted(ride.id, profile.id);
+        if (result.shouldReleasePayment) {
+          await releasePayment(result.ride);
+          setPassengerHasActiveRide(false);
+        }
+        await refreshProfile();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to complete ride");
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [profile?.id, refreshProfile, releasePayment]
+  );
+
+  const handleDriverComplete = useCallback(
+    async (ride: RideBookingRow) => {
+      if (!profile?.id) return;
+      setIsBusy(true);
+      setError(null);
+      setPaymentMessage(null);
+      try {
+        const result = await markDriverCompleted(ride.id, profile.id);
+        if (result.shouldReleasePayment) {
+          await releasePayment(result.ride);
+        }
+        await refreshProfile();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to complete ride");
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [profile?.id, refreshProfile, releasePayment]
   );
 
   if (!profile) {
@@ -101,15 +202,24 @@ export default function CoreRideSharePanel() {
       {role === "passenger" ? (
         <div className="space-y-6">
           <BookRideForm
-            passengerId={profile.id}
             onBookRide={handleBookRide}
             isBusy={isBusy}
+            hasActiveRide={passengerHasActiveRide}
+            activeRideMessage="You already have an active ride"
           />
-          {/* Show passenger's ride bookings with realtime status updates */}
-          <PassengerRideStatus passengerId={profile.id} />
+          <PassengerRideStatus
+            passengerId={profile.id}
+            isBusy={isBusy}
+            onCompleteRide={handlePassengerComplete}
+            paymentMessage={paymentMessage}
+          />
         </div>
       ) : (
-        <DriverRealtimeView />
+        <DriverRealtimeView
+          isBusy={isBusy}
+          onCompleteRide={handleDriverComplete}
+          paymentMessage={paymentMessage}
+        />
       )}
     </section>
   );

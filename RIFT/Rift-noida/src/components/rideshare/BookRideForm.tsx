@@ -101,7 +101,6 @@ async function fetchPlaceDetails(placeId: string): Promise<{
 }
 
 type BookRideFormProps = {
-  passengerId: string;
   onBookRide: (input: {
     originLat: number;
     originLng: number;
@@ -111,6 +110,8 @@ type BookRideFormProps = {
     destinationPlaceName?: string | null;
   }) => Promise<void>;
   isBusy: boolean;
+  hasActiveRide?: boolean;
+  activeRideMessage?: string | null;
 };
 
 function LocationIcon() {
@@ -131,9 +132,10 @@ function FlagIcon() {
 }
 
 export default function BookRideForm({
-  passengerId,
   onBookRide,
   isBusy,
+  hasActiveRide = false,
+  activeRideMessage,
 }: BookRideFormProps) {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
@@ -325,7 +327,12 @@ export default function BookRideForm({
     }
   };
 
-  const isValid = originPlaceId && destinationPlaceId && !isBusy && !isLoadingPlaceDetails;
+  const isValid =
+    originPlaceId &&
+    destinationPlaceId &&
+    !isBusy &&
+    !isLoadingPlaceDetails &&
+    !hasActiveRide;
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -417,6 +424,11 @@ export default function BookRideForm({
       {error && (
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-200">
           {error}
+        </div>
+      )}
+      {hasActiveRide && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
+          {activeRideMessage ?? "You already have an active ride"}
         </div>
       )}
 

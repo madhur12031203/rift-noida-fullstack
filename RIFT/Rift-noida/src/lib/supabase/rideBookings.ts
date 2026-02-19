@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { RideBookingRow } from "@/types";
 
 const supabase = createClient();
+const ACTIVE_RIDE_STATUSES: RideBookingRow["status"][] = ["waiting", "accepted", "in_progress"];
 
 /** Earth radius in km for Haversine formula */
 const EARTH_RADIUS_KM = 6371;
@@ -45,6 +46,11 @@ export async function createRideBooking(input: {
   pickupPlaceName?: string | null;
   destinationPlaceName?: string | null;
 }): Promise<RideBookingRow> {
+  const hasActiveRide = await passengerHasActiveRide(input.passengerId);
+  if (hasActiveRide) {
+    throw new Error("You already have an active ride");
+  }
+
   const { data, error } = await supabase
     .from("ride_bookings")
     .insert({
@@ -56,6 +62,8 @@ export async function createRideBooking(input: {
       pickup_place_name: input.pickupPlaceName ?? null,
       destination_place_name: input.destinationPlaceName ?? null,
       status: "waiting",
+      passenger_completed: false,
+      driver_completed: false,
     })
     .select()
     .single();
@@ -70,11 +78,18 @@ export async function createRideBooking(input: {
  * A ride can only be accepted once (driver_id is set).
  */
 export async function acceptRide(rideId: string, driverId: string): Promise<RideBookingRow> {
+  const hasActiveRide = await driverHasActiveRide(driverId);
+  if (hasActiveRide) {
+    throw new Error("Finish your current ride first");
+  }
+
   const { data, error } = await supabase
     .from("ride_bookings")
     .update({
       status: "accepted",
       driver_id: driverId,
+      passenger_completed: false,
+      driver_completed: false,
     })
     .eq("id", rideId)
     .eq("status", "waiting") // Only accept if still waiting (prevents double-accept)
@@ -157,6 +172,19 @@ export function subscribeToMyRideBookings(
     .on(
       "postgres_changes",
       {
+        event: "INSERT",
+        schema: "public",
+        table: "ride_bookings",
+        filter: `passenger_id=eq.${passengerId}`,
+      },
+      (payload) => {
+        const ride = payload.new as RideBookingRow;
+        onUpdate(ride);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
         event: "UPDATE",
         schema: "public",
         table: "ride_bookings",
@@ -201,4 +229,139 @@ export async function fetchMyRideBookings(passengerId: string): Promise<RideBook
 
   if (error) throw error;
   return (data ?? []) as RideBookingRow[];
+}
+
+export async function passengerHasActiveRide(passengerId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .select("id")
+    .eq("passenger_id", passengerId)
+    .in("status", ACTIVE_RIDE_STATUSES)
+    .limit(1);
+
+  if (error) throw error;
+  return Boolean(data && data.length > 0);
+}
+
+export async function driverHasActiveRide(driverId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .select("id")
+    .eq("driver_id", driverId)
+    .in("status", ACTIVE_RIDE_STATUSES)
+    .limit(1);
+
+  if (error) throw error;
+  return Boolean(data && data.length > 0);
+}
+
+export async function fetchPassengerActiveRide(
+  passengerId: string
+): Promise<RideBookingRow | null> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .select("*")
+    .eq("passenger_id", passengerId)
+    .in("status", ACTIVE_RIDE_STATUSES)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as RideBookingRow | null) ?? null;
+}
+
+export async function fetchDriverActiveRide(driverId: string): Promise<RideBookingRow | null> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .select("*")
+    .eq("driver_id", driverId)
+    .in("status", ACTIVE_RIDE_STATUSES)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as RideBookingRow | null) ?? null;
+}
+
+export async function fetchPassengerRideHistory(
+  passengerId: string
+): Promise<RideBookingRow[]> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .select("*")
+    .eq("passenger_id", passengerId)
+    .in("status", ["completed", "cancelled"])
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as RideBookingRow[];
+}
+
+export async function fetchDriverRideHistory(driverId: string): Promise<RideBookingRow[]> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .select("*")
+    .eq("driver_id", driverId)
+    .in("status", ["completed", "cancelled"])
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as RideBookingRow[];
+}
+
+export async function markDriverCompleted(
+  rideId: string,
+  driverId: string
+): Promise<{ ride: RideBookingRow; shouldReleasePayment: boolean }> {
+  const { data: updated, error: updateError } = await supabase
+    .from("ride_bookings")
+    .update({ driver_completed: true })
+    .eq("id", rideId)
+    .eq("driver_id", driverId)
+    .in("status", ["accepted", "in_progress"])
+    .select("*")
+    .single();
+
+  if (updateError) throw updateError;
+  const ride = updated as RideBookingRow;
+  return maybeFinalizeRideCompletion(ride);
+}
+
+export async function markPassengerCompleted(
+  rideId: string,
+  passengerId: string
+): Promise<{ ride: RideBookingRow; shouldReleasePayment: boolean }> {
+  const { data: updated, error: updateError } = await supabase
+    .from("ride_bookings")
+    .update({ passenger_completed: true })
+    .eq("id", rideId)
+    .eq("passenger_id", passengerId)
+    .in("status", ["accepted", "in_progress"])
+    .select("*")
+    .single();
+
+  if (updateError) throw updateError;
+  const ride = updated as RideBookingRow;
+  return maybeFinalizeRideCompletion(ride);
+}
+
+async function maybeFinalizeRideCompletion(
+  ride: RideBookingRow
+): Promise<{ ride: RideBookingRow; shouldReleasePayment: boolean }> {
+  if (!ride.driver_completed || !ride.passenger_completed) {
+    return { ride, shouldReleasePayment: false };
+  }
+
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .update({ status: "completed" })
+    .eq("id", ride.id)
+    .in("status", ["accepted", "in_progress"])
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return { ride: data as RideBookingRow, shouldReleasePayment: true };
 }

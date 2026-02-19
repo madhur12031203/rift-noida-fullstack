@@ -46,7 +46,10 @@ export type RideBookingRow = {
   destination_lng: number;
   pickup_place_name: string | null; // Display name for pickup location
   destination_place_name: string | null; // Display name for destination
-  status: "waiting" | "accepted" | "completed" | "cancelled";
+  status: "waiting" | "accepted" | "in_progress" | "completed" | "cancelled";
+  driver_completed: boolean;
+  passenger_completed: boolean;
+  escrow_release_txn_id?: string | null;
   created_at: string;
 };
 
