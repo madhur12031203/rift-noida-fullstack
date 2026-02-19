@@ -19,12 +19,13 @@ async function fetchPredictions(input: string): Promise<Prediction[]> {
       body: JSON.stringify({ input }),
     });
 
+    const responseText = await res.text();
+    const json = responseText ? JSON.parse(responseText) : {};
+
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ error: "Failed to fetch places" }));
-      throw new Error(errorData.error || "Failed to fetch places");
+      throw new Error(json.error || "Failed to fetch places");
     }
 
-    const json = await res.json().catch(() => ({ predictions: [] }));
     return json.predictions ?? [];
   } catch (error) {
     console.error("Error fetching predictions:", error);
@@ -112,6 +113,7 @@ type BookRideFormProps = {
   isBusy: boolean;
   hasActiveRide?: boolean;
   activeRideMessage?: string | null;
+  walletConnected: boolean;
 };
 
 function LocationIcon() {
@@ -136,6 +138,7 @@ export default function BookRideForm({
   isBusy,
   hasActiveRide = false,
   activeRideMessage,
+  walletConnected,
 }: BookRideFormProps) {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
@@ -152,10 +155,12 @@ export default function BookRideForm({
   
   const debounceRef = useRef<number | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const isPlacesEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
 
   // Fetch autocomplete suggestions when typing
   useEffect(() => {
     if (!activeField) return;
+    if (!isPlacesEnabled) return;
 
     const value = activeField === "origin" ? origin : destination;
     const query = value.trim();
@@ -182,7 +187,7 @@ export default function BookRideForm({
     return () => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
     };
-  }, [activeField, origin, destination]);
+  }, [activeField, isPlacesEnabled, origin, destination]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -281,6 +286,10 @@ export default function BookRideForm({
       setError("Please select both pickup and destination locations");
       return;
     }
+    if (!walletConnected) {
+      setError("Connect wallet before booking a ride");
+      return;
+    }
 
     setIsLoadingPlaceDetails(true);
 
@@ -332,7 +341,9 @@ export default function BookRideForm({
     destinationPlaceId &&
     !isBusy &&
     !isLoadingPlaceDetails &&
-    !hasActiveRide;
+    !hasActiveRide &&
+    walletConnected &&
+    isPlacesEnabled;
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -341,6 +352,11 @@ export default function BookRideForm({
         <p className="mt-1 text-sm text-slate-400">
           Enter pickup and destination locations
         </p>
+        {!isPlacesEnabled && (
+          <p className="mt-2 text-xs text-amber-300">
+            Location search is unavailable because Google Maps API key is missing.
+          </p>
+        )}
       </div>
 
       {/* Origin with Autocomplete */}
@@ -353,7 +369,7 @@ export default function BookRideForm({
               <button
                 type="button"
                 onClick={handleUseMyLocation}
-                disabled={isLoadingPlaceDetails}
+                disabled={isLoadingPlaceDetails || !isPlacesEnabled}
                 className="text-xs font-medium text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
               >
                 Use my location
@@ -366,7 +382,7 @@ export default function BookRideForm({
               onChange={(e) => setOrigin(e.target.value)}
               placeholder="Pickup location"
               className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-400 outline-none"
-              disabled={isBusy || isLoadingPlaceDetails}
+              disabled={isBusy || isLoadingPlaceDetails || !isPlacesEnabled}
               autoComplete="off"
             />
           </div>
@@ -400,7 +416,7 @@ export default function BookRideForm({
               onChange={(e) => setDestination(e.target.value)}
               placeholder="Drop location"
               className="mt-1 w-full bg-transparent text-sm text-slate-100 placeholder-slate-400 outline-none"
-              disabled={isBusy || isLoadingPlaceDetails}
+              disabled={isBusy || isLoadingPlaceDetails || !isPlacesEnabled}
               autoComplete="off"
             />
           </div>
@@ -429,6 +445,11 @@ export default function BookRideForm({
       {hasActiveRide && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
           {activeRideMessage ?? "You already have an active ride"}
+        </div>
+      )}
+      {!walletConnected && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
+          Connect wallet before booking a ride
         </div>
       )}
 

@@ -40,16 +40,20 @@ export type RideBookingRow = {
   id: string;
   passenger_id: string;
   driver_id: string | null; // Set when driver accepts
+  passenger_wallet: string | null;
+  driver_wallet: string | null;
   origin_lat: number;
   origin_lng: number;
   destination_lat: number;
   destination_lng: number;
   pickup_place_name: string | null; // Display name for pickup location
   destination_place_name: string | null; // Display name for destination
-  status: "waiting" | "accepted" | "in_progress" | "completed" | "cancelled";
+  status: "waiting" | "accepted" | "completed" | "cancelled";
   driver_completed: boolean;
   passenger_completed: boolean;
-  escrow_release_txn_id?: string | null;
+  escrow_state: "none" | "pending_lock" | "locked" | "released";
+  escrow_lock_txn_id: string | null;
+  escrow_release_txn_id: string | null;
   created_at: string;
 };
 

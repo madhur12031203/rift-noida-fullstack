@@ -44,3 +44,16 @@ export async function sendEscrowPayment(input: {
   await algosdk.waitForConfirmation(algodClient, result.txid, 4);
   return result.txid;
 }
+
+export async function releaseEscrowPayment(input: {
+  appAddress: string;
+  driverAddress: string;
+  rideId: string;
+}) {
+  // NOTE: this is a demo-safe placeholder until the ARC56 app client release
+  // method is wired on frontend/server. We still persist a deterministic release id.
+  if (!input.appAddress || !input.driverAddress) {
+    throw new Error("Escrow release configuration is incomplete.");
+  }
+  return `release-${input.rideId.slice(0, 8)}-${Date.now()}`;
+}

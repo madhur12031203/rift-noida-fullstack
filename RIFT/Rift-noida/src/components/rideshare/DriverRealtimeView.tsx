@@ -13,6 +13,8 @@ type DriverRealtimeViewProps = {
   isBusy: boolean;
   onCompleteRide: (ride: RideBookingRow) => Promise<void>;
   paymentMessage?: string | null;
+  driverWalletAddress: string | null;
+  onToast: (message: string, tone?: "success" | "info" | "error") => void;
 };
 
 type Prediction = { placeId: string; text: string };
@@ -25,12 +27,13 @@ async function fetchPredictions(input: string): Promise<Prediction[]> {
       body: JSON.stringify({ input }),
     });
 
+    const responseText = await res.text();
+    const json = responseText ? JSON.parse(responseText) : {};
+
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ error: "Failed to fetch places" }));
-      throw new Error(errorData.error || "Failed to fetch places");
+      throw new Error(json.error || "Failed to fetch places");
     }
 
-    const json = await res.json().catch(() => ({ predictions: [] }));
     return json.predictions ?? [];
   } catch (error) {
     console.error("Error fetching predictions:", error);
@@ -119,6 +122,8 @@ export default function DriverRealtimeView({
   isBusy,
   onCompleteRide,
   paymentMessage,
+  driverWalletAddress,
+  onToast,
 }: DriverRealtimeViewProps) {
   const [driverLat, setDriverLat] = useState<number | null>(null);
   const [driverLng, setDriverLng] = useState<number | null>(null);
@@ -231,11 +236,17 @@ export default function DriverRealtimeView({
   };
 
   const hasLocation = driverLat != null && driverLng != null;
+  const isPlacesEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
 
   return (
     <div className="space-y-4">
       {!hasLocation ? (
         <div className="rounded-2xl border border-slate-200/10 bg-white/5 p-4">
+          {!isPlacesEnabled && (
+            <p className="mb-3 text-xs text-amber-300">
+              Location search is unavailable because Google Maps API key is missing.
+            </p>
+          )}
           <p className="mb-3 text-sm font-medium text-slate-300">
             Enter your location to see nearby rides
           </p>
@@ -250,7 +261,7 @@ export default function DriverRealtimeView({
                   onChange={(e) => setLocationName(e.target.value)}
                   placeholder="Your current location"
                   className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-400 outline-none"
-                  disabled={isLoadingPlaceDetails}
+                  disabled={isLoadingPlaceDetails || !isPlacesEnabled}
                   autoComplete="off"
                 />
               </div>
@@ -274,7 +285,7 @@ export default function DriverRealtimeView({
             <button
               type="button"
               onClick={handleUseMyLocation}
-              disabled={isLoadingPlaceDetails}
+              disabled={isLoadingPlaceDetails || !isPlacesEnabled}
               className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-50"
             >
               {isLoadingPlaceDetails ? "Loading..." : "Use my location"}
@@ -288,7 +299,7 @@ export default function DriverRealtimeView({
         <>
           <div className="flex items-center justify-between rounded-2xl border border-slate-200/10 bg-white/5 px-4 py-2">
             <span className="text-sm text-slate-400">
-              Your location: {locationName || `${driverLat.toFixed(4)}, ${driverLng.toFixed(4)}`}
+              Your location: {locationName || "Current location selected"}
             </span>
             <button
               type="button"
@@ -308,6 +319,8 @@ export default function DriverRealtimeView({
             isBusy={isBusy}
             onCompleteRide={onCompleteRide}
             paymentMessage={paymentMessage}
+            driverWalletAddress={driverWalletAddress}
+            onToast={onToast}
           />
         </>
       )}

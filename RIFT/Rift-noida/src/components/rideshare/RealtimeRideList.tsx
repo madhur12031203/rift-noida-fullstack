@@ -21,6 +21,8 @@ type RealtimeRideListProps = {
   isBusy: boolean;
   onCompleteRide: (ride: RideBookingRow) => Promise<void>;
   paymentMessage?: string | null;
+  driverWalletAddress: string | null;
+  onToast: (message: string, tone?: "success" | "info" | "error") => void;
 };
 
 export default function RealtimeRideList({
@@ -29,11 +31,12 @@ export default function RealtimeRideList({
   isBusy,
   onCompleteRide,
   paymentMessage,
+  driverWalletAddress,
+  onToast,
 }: RealtimeRideListProps) {
   const [rides, setRides] = useState<RideWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [acceptingRideId, setAcceptingRideId] = useState<string | null>(null);
   const [driverId, setDriverId] = useState<string | null>(null);
   const [activeRide, setActiveRide] = useState<RideBookingRow | null>(null);
   const [blockedByActiveRide, setBlockedByActiveRide] = useState(false);
@@ -123,24 +126,28 @@ export default function RealtimeRideList({
         setError("Please sign in to accept rides");
         return;
       }
+      if (!driverWalletAddress) {
+        setError("Connect wallet before accepting rides");
+        return;
+      }
       if (blockedByActiveRide) {
         setError("Finish your current ride first");
         return;
       }
 
-      setAcceptingRideId(rideId);
       setError(null);
       try {
-        await acceptRide(rideId, driverId);
+        await acceptRide(rideId, driverId, driverWalletAddress);
         await refreshDriverRideState(driverId);
         setRides((prev) => prev.filter((value) => value.id !== rideId));
+        onToast("Ride accepted", "success");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to accept ride");
       } finally {
-        setAcceptingRideId(null);
+        // no-op
       }
     },
-    [blockedByActiveRide, driverId, refreshDriverRideState]
+    [blockedByActiveRide, driverId, driverWalletAddress, onToast, refreshDriverRideState]
   );
 
   if (loading) {
@@ -183,6 +190,13 @@ export default function RealtimeRideList({
               {activeRide.destination_place_name || "Destination location"}
             </p>
           </div>
+          <p className="mt-2 text-xs text-slate-300">
+            {activeRide.escrow_state === "locked"
+              ? "Funds locked on Algorand"
+              : activeRide.escrow_state === "released"
+                ? "Payment released on completion"
+                : "Waiting for passenger to lock escrow"}
+          </p>
           {!activeRide.driver_completed && (
             <button
               type="button"
@@ -205,6 +219,10 @@ export default function RealtimeRideList({
             <h2 className="text-xl font-bold text-slate-100">Available Nearby Rides</h2>
             <p className="mt-1 text-sm text-slate-400">
               Rides within {MAX_DISTANCE_KM} km. Updates in realtime.
+            </p>
+            <p className="mt-2 text-xs text-cyan-200">
+              Payments are locked in an Algorand smart contract escrow and released
+              automatically after ride completion.
             </p>
           </div>
           {rides.length === 0 ? (
@@ -241,13 +259,16 @@ export default function RealtimeRideList({
                   <button
                     type="button"
                     onClick={() => void handleAcceptRide(ride.id)}
-                    disabled={Boolean(isBusy || blockedByActiveRide || acceptingRideId === ride.id)}
+                    disabled={Boolean(isBusy || blockedByActiveRide || !driverWalletAddress)}
                     className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {acceptingRideId === ride.id ? "Accepting..." : "Accept Ride"}
+                    Accept Ride
                   </button>
                   {blockedByActiveRide && (
                     <p className="mt-2 text-xs text-amber-300">Finish your current ride first</p>
+                  )}
+                  {!driverWalletAddress && (
+                    <p className="mt-2 text-xs text-amber-300">Connect wallet before accepting rides</p>
                   )}
                 </article>
               ))}

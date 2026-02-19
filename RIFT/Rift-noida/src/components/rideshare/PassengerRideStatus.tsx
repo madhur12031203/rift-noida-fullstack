@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { fetchMyRideBookings, subscribeToMyRideBookings } from "@/lib/supabase/rideBookings";
+import { sendEscrowPayment } from "@/lib/algorand/escrow";
+import {
+  fetchMyRideBookings,
+  markEscrowLocked,
+  subscribeToMyRideBookings,
+} from "@/lib/supabase/rideBookings";
 import type { RideBookingRow } from "@/types";
 
 type PassengerRideStatusProps = {
@@ -9,15 +14,17 @@ type PassengerRideStatusProps = {
   isBusy: boolean;
   onCompleteRide: (ride: RideBookingRow) => Promise<void>;
   paymentMessage?: string | null;
+  walletAddress: string | null;
+  appAddress: string;
+  onToast: (message: string, tone?: "success" | "info" | "error") => void;
 };
 
-const ACTIVE_STATUSES: RideBookingRow["status"][] = ["waiting", "accepted", "in_progress"];
+const ACTIVE_STATUSES: RideBookingRow["status"][] = ["waiting", "accepted"];
 
 function StatusBadge({ status }: { status: RideBookingRow["status"] }) {
   const colors = {
     waiting: "bg-amber-500/20 text-amber-300",
     accepted: "bg-emerald-500/20 text-emerald-300",
-    in_progress: "bg-cyan-500/20 text-cyan-300",
     completed: "bg-blue-500/20 text-blue-300",
     cancelled: "bg-rose-500/20 text-rose-300",
   };
@@ -34,10 +41,14 @@ export default function PassengerRideStatus({
   isBusy,
   onCompleteRide,
   paymentMessage,
+  walletAddress,
+  appAddress,
+  onToast,
 }: PassengerRideStatusProps) {
   const [rides, setRides] = useState<RideBookingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lockingRideId, setLockingRideId] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -45,13 +56,17 @@ export default function PassengerRideStatus({
       .then((data) => setRides(data))
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load rides"))
       .finally(() => setLoading(false));
-  }, [passengerId]);
+  }, [onToast, passengerId]);
 
   useEffect(() => {
     const unsubscribe = subscribeToMyRideBookings(passengerId, (ride) => {
       setRides((prev) => {
         const exists = prev.some((value) => value.id === ride.id);
         if (exists) {
+          const current = prev.find((value) => value.id === ride.id);
+          if (current && current.status !== "accepted" && ride.status === "accepted") {
+            onToast("Ride accepted", "success");
+          }
           return prev.map((value) => (value.id === ride.id ? ride : value));
         }
         return [ride, ...prev];
@@ -75,6 +90,34 @@ export default function PassengerRideStatus({
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [rides]
   );
+
+  useEffect(() => {
+    if (!activeRide || activeRide.status !== "accepted") return;
+    if (activeRide.escrow_state !== "pending_lock") return;
+    if (!walletAddress || walletAddress !== activeRide.passenger_wallet) return;
+    if (lockingRideId === activeRide.id) return;
+    if (!appAddress) return;
+
+    setLockingRideId(activeRide.id);
+    void (async () => {
+      try {
+        const txnId = await sendEscrowPayment({
+          senderAddress: walletAddress,
+          appAddress,
+          fare: 60,
+        });
+        await markEscrowLocked(activeRide.id, passengerId, txnId);
+        onToast("Escrow locked", "success");
+      } catch (lockError) {
+        const message =
+          lockError instanceof Error ? lockError.message : "Failed to lock escrow";
+        setError(message);
+        onToast("Escrow lock failed", "error");
+      } finally {
+        setLockingRideId(null);
+      }
+    })();
+  }, [activeRide, appAddress, lockingRideId, onToast, passengerId, walletAddress]);
 
   if (loading) {
     return (
@@ -124,8 +167,14 @@ export default function PassengerRideStatus({
               {activeRide.destination_place_name || "Destination location"}
             </p>
           </div>
-          {(activeRide.status === "accepted" || activeRide.status === "in_progress") &&
-            !activeRide.passenger_completed && (
+          <p className="mt-2 text-xs text-slate-300">
+            {activeRide.escrow_state === "locked"
+              ? "Funds locked on Algorand"
+              : activeRide.escrow_state === "released"
+                ? "Payment released on completion"
+                : "Escrow will lock as soon as driver accepts your ride"}
+          </p>
+          {activeRide.status === "accepted" && !activeRide.passenger_completed && (
               <button
                 type="button"
                 onClick={() => void onCompleteRide(activeRide)}
@@ -135,7 +184,14 @@ export default function PassengerRideStatus({
                 Complete Ride
               </button>
             )}
-          {(activeRide.status === "accepted" || activeRide.status === "in_progress") &&
+          {activeRide.status === "accepted" &&
+            activeRide.escrow_state === "pending_lock" &&
+            (!walletAddress || walletAddress !== activeRide.passenger_wallet) && (
+              <p className="mt-2 text-xs text-amber-300">
+                Connect the passenger wallet used for booking to lock escrow.
+              </p>
+            )}
+          {activeRide.status === "accepted" &&
             activeRide.passenger_completed &&
             !activeRide.driver_completed && (
               <p className="mt-3 text-xs text-amber-300">

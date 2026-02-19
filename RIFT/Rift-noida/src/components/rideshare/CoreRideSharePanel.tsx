@@ -14,11 +14,13 @@ import RoleSelector from "./RoleSelector";
 import {
   createRideBooking,
   fetchPassengerActiveRide,
+  markEscrowReleased,
   markDriverCompleted,
   markPassengerCompleted,
 } from "@/lib/supabase/rideBookings";
-import { sendEscrowPayment } from "@/lib/algorand/escrow";
+import { releaseEscrowPayment } from "@/lib/algorand/escrow";
 import { ensureUserProfile, updateRole, updateWalletAddress } from "@/lib/supabase/rideshare";
+import ToastStack from "@/components/ui/ToastStack";
 import type { RideBookingRow, UserProfileRow, UserRole } from "@/types";
 
 type CoreRideSharePanelProps = {
@@ -37,15 +39,11 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function estimateRideFare(ride: RideBookingRow): number {
-  const kmPerDegree = 111;
-  const distanceKm =
-    Math.sqrt(
-      (ride.destination_lat - ride.origin_lat) ** 2 +
-        (ride.destination_lng - ride.origin_lng) ** 2
-    ) * kmPerDegree;
-  return Math.max(40, Math.round(distanceKm * 12 + 20));
-}
+type Toast = {
+  id: number;
+  message: string;
+  tone?: "success" | "info" | "error";
+};
 
 export default function CoreRideSharePanel({
   walletAddress,
@@ -57,8 +55,17 @@ export default function CoreRideSharePanel({
   const [isRoleSaving, setIsRoleSaving] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
   const [passengerHasActiveRide, setPassengerHasActiveRide] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   const role = profile?.role ?? null;
+
+  const pushToast = useCallback((message: string, tone: Toast["tone"] = "info") => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, message, tone }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 2600);
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     const next = await ensureUserProfile(walletAddress);
@@ -109,14 +116,19 @@ export default function CoreRideSharePanel({
       destinationPlaceName?: string | null;
     }) => {
       if (!profile?.id) return;
+      if (!walletAddress) {
+        throw new Error("Connect wallet before booking a ride");
+      }
       setIsBusy(true);
       setError(null);
       try {
         await createRideBooking({
           passengerId: profile.id,
+          passengerWallet: walletAddress,
           ...input,
         });
         setPassengerHasActiveRide(true);
+        pushToast("Ride booked", "success");
         await refreshProfile();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to book ride");
@@ -125,26 +137,28 @@ export default function CoreRideSharePanel({
         setIsBusy(false);
       }
     },
-    [profile?.id, refreshProfile]
+    [profile?.id, pushToast, refreshProfile, walletAddress]
   );
 
   const releasePayment = useCallback(
     async (ride: RideBookingRow) => {
-      if (!walletAddress) {
-        throw new Error("Connect Wallet");
-      }
       if (!appAddress) {
         throw new Error("Escrow app address is not configured");
       }
+      if (!ride.driver_wallet) {
+        throw new Error("Driver wallet missing for escrow release");
+      }
 
-      await sendEscrowPayment({
-        senderAddress: walletAddress,
+      const releaseTxnId = await releaseEscrowPayment({
         appAddress,
-        fare: estimateRideFare(ride),
+        driverAddress: ride.driver_wallet,
+        rideId: ride.id,
       });
+      await markEscrowReleased(ride.id, releaseTxnId);
       setPaymentMessage("Payment released successfully");
+      pushToast("Payment released", "success");
     },
-    [appAddress, walletAddress]
+    [appAddress, pushToast]
   );
 
   const handlePassengerComplete = useCallback(
@@ -155,6 +169,7 @@ export default function CoreRideSharePanel({
       setPaymentMessage(null);
       try {
         const result = await markPassengerCompleted(ride.id, profile.id);
+        pushToast("Ride completed", "success");
         if (result.shouldReleasePayment) {
           try {
             await releasePayment(result.ride);
@@ -186,6 +201,7 @@ export default function CoreRideSharePanel({
       setPaymentMessage(null);
       try {
         const result = await markDriverCompleted(ride.id, profile.id);
+        pushToast("Ride completed", "success");
         if (result.shouldReleasePayment) {
           try {
             await releasePayment(result.ride);
@@ -222,6 +238,7 @@ export default function CoreRideSharePanel({
 
   return (
     <section className="space-y-4">
+      <ToastStack toasts={toasts} />
       {error && (
         <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
           {error}
@@ -235,12 +252,20 @@ export default function CoreRideSharePanel({
             isBusy={isBusy}
             hasActiveRide={passengerHasActiveRide}
             activeRideMessage="You already have an active ride"
+            walletConnected={Boolean(walletAddress)}
           />
+          <p className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
+            Payments are locked in an Algorand smart contract escrow and released
+            automatically after ride completion.
+          </p>
           <PassengerRideStatus
             passengerId={profile.id}
             isBusy={isBusy}
             onCompleteRide={handlePassengerComplete}
             paymentMessage={paymentMessage}
+            walletAddress={walletAddress}
+            appAddress={appAddress}
+            onToast={pushToast}
           />
         </div>
       ) : (
@@ -248,6 +273,8 @@ export default function CoreRideSharePanel({
           isBusy={isBusy}
           onCompleteRide={handleDriverComplete}
           paymentMessage={paymentMessage}
+          driverWalletAddress={walletAddress}
+          onToast={pushToast}
         />
       )}
     </section>

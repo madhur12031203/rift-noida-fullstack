@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { RideBookingRow } from "@/types";
 
 const supabase = createClient();
-const ACTIVE_RIDE_STATUSES: RideBookingRow["status"][] = ["waiting", "accepted", "in_progress"];
+const ACTIVE_RIDE_STATUSES: RideBookingRow["status"][] = ["waiting", "accepted"];
 
 /** Earth radius in km for Haversine formula */
 const EARTH_RADIUS_KM = 6371;
@@ -39,6 +39,7 @@ export function haversineDistanceKm(
  */
 export async function createRideBooking(input: {
   passengerId: string;
+  passengerWallet: string;
   originLat: number;
   originLng: number;
   destinationLat: number;
@@ -46,6 +47,10 @@ export async function createRideBooking(input: {
   pickupPlaceName?: string | null;
   destinationPlaceName?: string | null;
 }): Promise<RideBookingRow> {
+  if (!input.passengerWallet) {
+    throw new Error("Connect wallet before booking a ride");
+  }
+
   const hasActiveRide = await passengerHasActiveRide(input.passengerId);
   if (hasActiveRide) {
     throw new Error("You already have an active ride");
@@ -55,6 +60,7 @@ export async function createRideBooking(input: {
     .from("ride_bookings")
     .insert({
       passenger_id: input.passengerId,
+      passenger_wallet: input.passengerWallet,
       origin_lat: input.originLat,
       origin_lng: input.originLng,
       destination_lat: input.destinationLat,
@@ -64,6 +70,7 @@ export async function createRideBooking(input: {
       status: "waiting",
       passenger_completed: false,
       driver_completed: false,
+      escrow_state: "none",
     })
     .select()
     .single();
@@ -77,7 +84,15 @@ export async function createRideBooking(input: {
  * Security: Only authenticated drivers can accept, and only waiting rides can be accepted.
  * A ride can only be accepted once (driver_id is set).
  */
-export async function acceptRide(rideId: string, driverId: string): Promise<RideBookingRow> {
+export async function acceptRide(
+  rideId: string,
+  driverId: string,
+  driverWallet: string
+): Promise<RideBookingRow> {
+  if (!driverWallet) {
+    throw new Error("Connect wallet before accepting rides");
+  }
+
   const hasActiveRide = await driverHasActiveRide(driverId);
   if (hasActiveRide) {
     throw new Error("Finish your current ride first");
@@ -88,8 +103,10 @@ export async function acceptRide(rideId: string, driverId: string): Promise<Ride
     .update({
       status: "accepted",
       driver_id: driverId,
+      driver_wallet: driverWallet,
       passenger_completed: false,
       driver_completed: false,
+      escrow_state: "pending_lock",
     })
     .eq("id", rideId)
     .eq("status", "waiting") // Only accept if still waiting (prevents double-accept)
@@ -320,7 +337,7 @@ export async function markDriverCompleted(
     .update({ driver_completed: true })
     .eq("id", rideId)
     .eq("driver_id", driverId)
-    .in("status", ["accepted", "in_progress"])
+    .eq("status", "accepted")
     .select("*")
     .single();
 
@@ -343,7 +360,7 @@ export async function markPassengerCompleted(
     .update({ passenger_completed: true })
     .eq("id", rideId)
     .eq("passenger_id", passengerId)
-    .in("status", ["accepted", "in_progress"])
+    .eq("status", "accepted")
     .select("*")
     .single();
 
@@ -360,7 +377,7 @@ export async function markPassengerCompleted(
 async function maybeFinalizeRideCompletion(
   ride: RideBookingRow
 ): Promise<{ ride: RideBookingRow; shouldReleasePayment: boolean }> {
-  if (!ride.driver_completed || !ride.passenger_completed) {
+  if (!ride.driver_completed && !ride.passenger_completed) {
     return { ride, shouldReleasePayment: false };
   }
 
@@ -368,7 +385,7 @@ async function maybeFinalizeRideCompletion(
     .from("ride_bookings")
     .update({ status: "completed" })
     .eq("id", ride.id)
-    .in("status", ["accepted", "in_progress"])
+    .eq("status", "accepted")
     .select("*")
     .single();
 
@@ -378,5 +395,50 @@ async function maybeFinalizeRideCompletion(
     }
     throw error;
   }
-  return { ride: data as RideBookingRow, shouldReleasePayment: true };
+  const completedRide = data as RideBookingRow;
+  return {
+    ride: completedRide,
+    shouldReleasePayment:
+      completedRide.escrow_state === "locked" && !completedRide.escrow_release_txn_id,
+  };
+}
+
+export async function markEscrowLocked(
+  rideId: string,
+  passengerId: string,
+  lockTxnId: string
+): Promise<RideBookingRow> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .update({
+      escrow_state: "locked",
+      escrow_lock_txn_id: lockTxnId,
+    })
+    .eq("id", rideId)
+    .eq("passenger_id", passengerId)
+    .eq("status", "accepted")
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as RideBookingRow;
+}
+
+export async function markEscrowReleased(
+  rideId: string,
+  releaseTxnId: string
+): Promise<RideBookingRow> {
+  const { data, error } = await supabase
+    .from("ride_bookings")
+    .update({
+      escrow_state: "released",
+      escrow_release_txn_id: releaseTxnId,
+    })
+    .eq("id", rideId)
+    .eq("status", "completed")
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as RideBookingRow;
 }
