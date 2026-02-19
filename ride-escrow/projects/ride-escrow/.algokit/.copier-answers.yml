@@ -1,0 +1,10 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 1.8.1
+_src_path: gh:algorandfoundation/algokit-python-template
+author_email: madhur12031203@gmail.com
+author_name: madhur12031203
+contract_name: ride_escrow
+deployment_language: python
+preset_name: starter
+project_name: ride-escrow
+

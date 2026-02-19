@@ -1,0 +1,264 @@
+#pragma version 10
+#pragma typetrack false
+
+// smart_contracts.ride_escrow.contract.RideEscrow.__algopy_entrypoint_with_init() -> uint64:
+main:
+    intcblock 0 1 2
+    bytecblock "status" "amount" "driver" "rider"
+    txn ApplicationID
+    bnz main_after_if_else@2
+    // smart_contracts/ride_escrow/contract.py:17
+    // self.driver = Account()
+    bytec_2 // "driver"
+    global ZeroAddress
+    app_global_put
+    // smart_contracts/ride_escrow/contract.py:18
+    // self.rider = Account()
+    bytec_3 // "rider"
+    global ZeroAddress
+    app_global_put
+    // smart_contracts/ride_escrow/contract.py:19
+    // self.amount = UInt64(0)
+    bytec_1 // "amount"
+    intc_0 // 0
+    app_global_put
+    // smart_contracts/ride_escrow/contract.py:20
+    // self.status = UInt64(CANCELLED)
+    bytec_0 // "status"
+    intc_2 // 2
+    app_global_put
+
+main_after_if_else@2:
+    // smart_contracts/ride_escrow/contract.py:9
+    // class RideEscrow(ARC4Contract):
+    txn NumAppArgs
+    bz main_bare_routing@8
+    pushbytess 0x5eddb3ea 0x56c111b4 0xa6f0bf8c // method "book_trip(address,pay)void", method "complete_trip()void", method "cancel_trip()void"
+    txna ApplicationArgs 0
+    match main_book_trip_route@5 main_complete_trip_route@6 main_cancel_trip_route@7
+
+main_after_if_else@10:
+    // smart_contracts/ride_escrow/contract.py:9
+    // class RideEscrow(ARC4Contract):
+    intc_0 // 0
+    return
+
+main_cancel_trip_route@7:
+    // smart_contracts/ride_escrow/contract.py:45
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    callsub cancel_trip
+    intc_1 // 1
+    return
+
+main_complete_trip_route@6:
+    // smart_contracts/ride_escrow/contract.py:35
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    callsub complete_trip
+    intc_1 // 1
+    return
+
+main_book_trip_route@5:
+    // smart_contracts/ride_escrow/contract.py:22
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/ride_escrow/contract.py:9
+    // class RideEscrow(ARC4Contract):
+    txna ApplicationArgs 1
+    dup
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    txn GroupIndex
+    intc_1 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_1 // pay
+    ==
+    assert // transaction type is pay
+    // smart_contracts/ride_escrow/contract.py:22
+    // @arc4.abimethod
+    callsub book_trip
+    intc_1 // 1
+    return
+
+main_bare_routing@8:
+    // smart_contracts/ride_escrow/contract.py:9
+    // class RideEscrow(ARC4Contract):
+    txn OnCompletion
+    bnz main_after_if_else@10
+    txn ApplicationID
+    !
+    assert // can only call when creating
+    intc_1 // 1
+    return
+
+
+// smart_contracts.ride_escrow.contract.RideEscrow.book_trip(driver_addr: bytes, pay: uint64) -> void:
+book_trip:
+    // smart_contracts/ride_escrow/contract.py:22-23
+    // @arc4.abimethod
+    // def book_trip(self, driver_addr: arc4.Address, pay: gtxn.PaymentTransaction) -> None:
+    proto 2 0
+    // smart_contracts/ride_escrow/contract.py:24-25
+    // # Rider locks fare in app escrow and trip is marked as booked.
+    // assert self.status != UInt64(BOOKED)
+    intc_0 // 0
+    bytec_0 // "status"
+    app_global_get_ex
+    assert // check self.status exists
+    assert
+    // smart_contracts/ride_escrow/contract.py:26
+    // assert pay.receiver == Global.current_application_address
+    frame_dig -1
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    assert
+    // smart_contracts/ride_escrow/contract.py:27
+    // assert pay.amount > UInt64(0)
+    frame_dig -1
+    gtxns Amount
+    dup
+    assert
+    // smart_contracts/ride_escrow/contract.py:28
+    // assert pay.sender == Txn.sender
+    frame_dig -1
+    gtxns Sender
+    txn Sender
+    ==
+    assert
+    // smart_contracts/ride_escrow/contract.py:30
+    // self.driver = driver_addr.native
+    bytec_2 // "driver"
+    frame_dig -2
+    app_global_put
+    // smart_contracts/ride_escrow/contract.py:31
+    // self.rider = Txn.sender
+    bytec_3 // "rider"
+    txn Sender
+    app_global_put
+    // smart_contracts/ride_escrow/contract.py:32
+    // self.amount = pay.amount
+    bytec_1 // "amount"
+    swap
+    app_global_put
+    // smart_contracts/ride_escrow/contract.py:33
+    // self.status = UInt64(BOOKED)
+    bytec_0 // "status"
+    intc_0 // 0
+    app_global_put
+    retsub
+
+
+// smart_contracts.ride_escrow.contract.RideEscrow.complete_trip() -> void:
+complete_trip:
+    // smart_contracts/ride_escrow/contract.py:37-38
+    // # Driver completes trip and receives escrowed ALGO.
+    // assert self.status == UInt64(BOOKED)
+    intc_0 // 0
+    bytec_0 // "status"
+    app_global_get_ex
+    assert // check self.status exists
+    !
+    assert
+    // smart_contracts/ride_escrow/contract.py:39
+    // assert Txn.sender == self.driver
+    txn Sender
+    intc_0 // 0
+    bytec_2 // "driver"
+    app_global_get_ex
+    assert // check self.driver exists
+    swap
+    dig 1
+    ==
+    assert
+    // smart_contracts/ride_escrow/contract.py:41
+    // itxn.Payment(receiver=self.driver, amount=self.amount, fee=0).submit()
+    itxn_begin
+    intc_0 // 0
+    bytec_1 // "amount"
+    app_global_get_ex
+    assert // check self.amount exists
+    itxn_field Amount
+    itxn_field Receiver
+    intc_1 // pay
+    itxn_field TypeEnum
+    intc_0 // 0
+    itxn_field Fee
+    itxn_submit
+    // smart_contracts/ride_escrow/contract.py:42
+    // self.amount = UInt64(0)
+    bytec_1 // "amount"
+    intc_0 // 0
+    app_global_put
+    // smart_contracts/ride_escrow/contract.py:43
+    // self.status = UInt64(COMPLETED)
+    bytec_0 // "status"
+    intc_1 // 1
+    app_global_put
+    retsub
+
+
+// smart_contracts.ride_escrow.contract.RideEscrow.cancel_trip() -> void:
+cancel_trip:
+    // smart_contracts/ride_escrow/contract.py:47-48
+    // # Rider cancels trip and gets refunded from escrow.
+    // assert self.status == UInt64(BOOKED)
+    intc_0 // 0
+    bytec_0 // "status"
+    app_global_get_ex
+    assert // check self.status exists
+    !
+    assert
+    // smart_contracts/ride_escrow/contract.py:49
+    // assert Txn.sender == self.rider
+    txn Sender
+    intc_0 // 0
+    bytec_3 // "rider"
+    app_global_get_ex
+    assert // check self.rider exists
+    swap
+    dig 1
+    ==
+    assert
+    // smart_contracts/ride_escrow/contract.py:51
+    // itxn.Payment(receiver=self.rider, amount=self.amount, fee=0).submit()
+    itxn_begin
+    intc_0 // 0
+    bytec_1 // "amount"
+    app_global_get_ex
+    assert // check self.amount exists
+    itxn_field Amount
+    itxn_field Receiver
+    intc_1 // pay
+    itxn_field TypeEnum
+    intc_0 // 0
+    itxn_field Fee
+    itxn_submit
+    // smart_contracts/ride_escrow/contract.py:52
+    // self.amount = UInt64(0)
+    bytec_1 // "amount"
+    intc_0 // 0
+    app_global_put
+    // smart_contracts/ride_escrow/contract.py:53
+    // self.status = UInt64(CANCELLED)
+    bytec_0 // "status"
+    intc_2 // 2
+    app_global_put
+    retsub
