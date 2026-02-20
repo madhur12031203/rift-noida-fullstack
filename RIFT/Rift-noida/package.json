@@ -14,7 +14,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "algosdk": "^3.5.2",
-    "next": "15.1.0",
+    "next": "15.1.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
