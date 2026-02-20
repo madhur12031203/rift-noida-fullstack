@@ -1,0 +1,91 @@
+export type FareResult = {
+  provider: "Uber" | "Ola" | "Rapido";
+  price: number;
+  duration: string;
+  distance: string;
+  icon: string;
+  bookingUrl?: string;
+};
+
+export interface LocationInput {
+  origin: string;
+  destination: string;
+}
+
+export type UserRole = "driver" | "passenger";
+
+export type BookingStatus = "pending" | "ongoing" | "completed" | "cancelled";
+
+export type RideRow = {
+  id: string;
+  driver_id: string;
+  source: string;
+  destination: string;
+  available_seats: number;
+  status: string;
+  departure_time?: string | null;
+};
+
+export type RideRequestRow = {
+  id: string;
+  passenger_id: string;
+  source: string;
+  destination: string;
+  fare_estimate: number;
+  status: string;
+};
+
+/** Core realtime ride booking (passenger-initiated, lat/lng + place names) */
+export type RideBookingRow = {
+  id: string;
+  passenger_id: string;
+  driver_id: string | null; // Set when driver accepts
+  passenger_wallet: string | null;
+  driver_wallet: string | null;
+  origin_lat: number;
+  origin_lng: number;
+  destination_lat: number;
+  destination_lng: number;
+  pickup_place_name: string | null; // Display name for pickup location
+  destination_place_name: string | null; // Display name for destination
+  status: "waiting" | "accepted" | "completed" | "cancelled";
+  driver_completed: boolean;
+  passenger_completed: boolean;
+  escrow_state: "none" | "pending_lock" | "locked" | "released";
+  escrow_lock_txn_id: string | null;
+  escrow_release_txn_id: string | null;
+  created_at: string;
+};
+
+export type BookingRow = {
+  id: string;
+  driver_id: string;
+  passenger_id: string;
+  ride_id: string | null;
+  fare: number;
+  status: BookingStatus;
+  algorand_app_id: number | null;
+  escrow_txn_id: string | null;
+};
+
+export type UserProfileRow = {
+  id: string;
+  name: string | null;
+  role: UserRole | null;
+  wallet_address: string | null;
+  rating_avg: number | null;
+  rating_count: number | null;
+};
+
+export type DocumentType = "college_id" | "aadhaar" | "driving_license";
+export type VerificationStatus = "pending" | "verified" | "rejected";
+
+export type UserVerificationRow = {
+  id: string;
+  user_id: string;
+  document_type: DocumentType;
+  document_url: string;
+  status: VerificationStatus;
+  created_at: string;
+  reviewed_at: string | null;
+};
