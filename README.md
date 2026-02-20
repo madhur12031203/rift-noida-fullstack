@@ -15,7 +15,7 @@ This project solves that by combining:
 https://rift-noida-fullstack.vercel.app/
 
 ## LinkedIn Demo Video URL
-
+https://www.linkedin.com/posts/madhur-gupta1203_rifthackathon-moneymulingdetection-financialcrime-activity-7430422813305614336-8iSN?utm_source=share&utm_medium=member_android&rcm=ACoAAFK7xuEBQMXCrMSg9K9q_jFxHAzCMCRf5dM
 
 ## App ID (Testnet) And Explorer Link
 - Algorand Testnet App ID: 755776791
