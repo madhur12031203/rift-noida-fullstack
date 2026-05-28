@@ -12,14 +12,14 @@ This project solves that by combining:
 - programmable settlement guarantees (Algorand escrow).
 
 ## Live Demo URL
-`<ADD_LIVE_DEMO_URL>`
+https://rift-noida-fullstack.vercel.app/
 
 ## LinkedIn Demo Video URL
-`<ADD_LINKEDIN_DEMO_VIDEO_URL>`
+https://www.linkedin.com/posts/madhur-gupta1203_rifthackathon-moneymulingdetection-financialcrime-activity-7430422813305614336-8iSN?utm_source=share&utm_medium=member_android&rcm=ACoAAFK7xuEBQMXCrMSg9K9q_jFxHAzCMCRf5dM
 
 ## App ID (Testnet) And Explorer Link
-- Algorand Testnet App ID: `<ADD_APP_ID>`
-- Testnet Explorer: `https://testnet.explorer.perawallet.app/application/<ADD_APP_ID>`
+- Algorand Testnet App ID: 755776791
+- App Address: `GLYCD2SYQTCIBJFCCHBFDFLILGB5YLV5DNLOPOFKVYSJ7A67UCNJJTTQ2Q`
 
 ## Architecture Overview (Smart Contract + Frontend Interaction)
 1. Passenger signs in, connects Pera Wallet, and books a ride (`status = waiting`).
@@ -47,7 +47,7 @@ Trust + settlement:
 ## Installation And Setup Instructions
 ### 1. Clone
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/madhur12031203/rift-noida-fullstack.git
 cd RIFT/Rift-noida
 ```
 
@@ -56,46 +56,46 @@ cd RIFT/Rift-noida
 npm install
 ```
 
-### 3. Configure environment
+### 3. Configure Environment
 Create `.env.local` with:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=<SUPABASE_URL>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<SUPABASE_ANON_KEY>
-SUPABASE_SERVICE_ROLE_KEY=<SUPABASE_SERVICE_ROLE_KEY>
+NEXT_PUBLIC_RIDE_ESCROW_APP_ID=755776791
+NEXT_PUBLIC_RIDE_ESCROW_APP_ADDRESS=GLYCD2SYQTCIBJFCCHBFDFLILGB5YLV5DNLOPOFKVYSJ7A67UCNJJTTQ2Q
 
-NEXT_PUBLIC_RIDE_ESCROW_APP_ID=<ALGOD_TESTNET_APP_ID>
-NEXT_PUBLIC_RIDE_ESCROW_APP_ADDRESS=<ALGOD_TESTNET_APP_ADDRESS>
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 
-GOOGLE_MAPS_API_KEY=<OPTIONAL_FOR_PLACES>
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<OPTIONAL_FOR_PLACES>
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ADMIN_EMAILS=admin@example.com
+
+GEMINI_API_KEY=your-gemini-api-key
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-browser-key
 ```
 
-### 4. Apply database migrations
+Never commit real `.env.local` values. Keep production secrets in Vercel Environment Variables.
+
+### 4. Apply Database Migrations
 ```bash
 supabase db push
 ```
 
-### 5. Run the app
+### 5. Run The App
 ```bash
 npm run dev
 ```
 
-### 6. Production build check
+### 6. Production Build Check
 ```bash
 npm run build
 ```
 
-## Usage Guide (With Screenshots)
+## Usage Guide
 1. Login as passenger, connect wallet, book a ride.
 2. Login as driver on second laptop/session, connect wallet, accept ride.
 3. Passenger sees accepted status and escrow lock confirmation.
 4. Passenger/driver completes ride; payment releases.
 
-Screenshots:
-- Booking flow: `docs/screenshots/passenger-booking.png`
-- Driver realtime accept: `docs/screenshots/driver-realtime.png`
-- Escrow locked status: `docs/screenshots/escrow-locked.png`
-- Completion + payment released: `docs/screenshots/ride-completed.png`
 
 ## Known Limitations
 - Escrow release path in frontend is demo-safe and should be replaced with full ARC client call in production.
@@ -104,7 +104,5 @@ Screenshots:
 - Notification system is in-app toast only (no push/SMS).
 
 ## Team Members And Roles
-- `<TEAM_MEMBER_1>` - Smart contract and AlgoKit integration
-- `<TEAM_MEMBER_2>` - Frontend and realtime ride UX
-- `<TEAM_MEMBER_3>` - Supabase schema, RLS, API routes
-- `<TEAM_MEMBER_4>` - Product demo, testing, deployment
+- `<TEAM_MEMBER_1>` - Smart contract, AlgoKit integration, testing, and deployment
+- `<TEAM_MEMBER_2>` - Frontend, realtime ride UX, Supabase schema, RLS, API routes, and product demo
