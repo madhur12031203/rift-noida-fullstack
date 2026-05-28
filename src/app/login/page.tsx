@@ -8,16 +8,28 @@ import { createClient } from "@/lib/supabase/client";
 export default function LoginPage() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        router.replace("/");
-      } else {
-        setIsChecking(false);
-      }
-    });
+    try {
+      const supabase = createClient();
+      void supabase.auth
+        .getUser()
+        .then(({ data }) => {
+          if (data.user) {
+            router.replace("/");
+          } else {
+            setIsChecking(false);
+          }
+        })
+        .catch((err: unknown) => {
+          setError(err instanceof Error ? err.message : "Unable to check login status.");
+          setIsChecking(false);
+        });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to check login status.");
+      setIsChecking(false);
+    }
   }, [router]);
 
   if (isChecking) {
@@ -39,6 +51,12 @@ export default function LoginPage() {
         <p className="mt-2 text-center text-sm text-slate-400">
           Choose how you want to use the app today.
         </p>
+
+        {error && (
+          <div className="mt-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            {error}
+          </div>
+        )}
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <Link

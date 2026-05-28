@@ -21,7 +21,19 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
   const [error, setError] = useState<string | null>(null);
 
   function getErrorMessage(err: unknown, fallback: string): string {
-    return err instanceof Error ? err.message : fallback;
+    if (!(err instanceof Error)) return fallback;
+
+    if (err.message.toLowerCase().includes("failed to fetch")) {
+      return "Could not reach Supabase. Check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are set correctly in Vercel, then redeploy.";
+    }
+
+    return err.message;
+  }
+
+  function getAuthBaseUrl(): string {
+    const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+    if (configured) return configured.replace(/\/$/, "");
+    return window.location.origin;
   }
 
   async function handleEmailAuth(e: React.FormEvent) {
@@ -31,7 +43,8 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
 
     try {
       const supabase = createClient();
-      const redirectTo = `${window.location.origin}/auth/callback?role=${role}`;
+      const baseUrl = getAuthBaseUrl();
+      const redirectTo = `${baseUrl}/auth/callback?role=${role}`;
 
       if (isSignUp) {
         // Sign up
@@ -83,12 +96,21 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
   }
 
   async function handleGoogleAuth() {
-    const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/callback?role=${role}`;
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo },
-    });
+    setError(null);
+
+    try {
+      const supabase = createClient();
+      const baseUrl = getAuthBaseUrl();
+      const redirectTo = `${baseUrl}/auth/callback?role=${role}`;
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+
+      if (oauthError) throw oauthError;
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Google sign-in failed. Please try again."));
+    }
   }
 
   return (
@@ -180,8 +202,9 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
                   }
                   try {
                     const supabase = createClient();
+                    const baseUrl = getAuthBaseUrl();
                     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                      redirectTo: `${window.location.origin}/auth/reset-password`,
+                      redirectTo: `${baseUrl}/auth/reset-password`,
                     });
                     if (error) throw error;
                     setError(null);
