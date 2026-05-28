@@ -1,11 +1,11 @@
 # Campus Ride - Algorand Escrow Ridesharing
 
 ## Project Title And Description
-Campus Ride is a mobile-first campus ride-sharing web app built with Next.js, Supabase Realtime, and Algorand.  
+Campus Ride is a mobile-first campus ride-sharing web app built with Next.js, Supabase Realtime, and Algorand.
 It connects passengers and drivers in real time, locks payments in Algorand escrow, and releases funds automatically when rides are completed.
 
 ## Problem Statement / Original Idea
-Students need a safer and more transparent intra-campus ride coordination system than ad-hoc messaging groups.  
+Students need a safer and more transparent intra-campus ride coordination system than ad-hoc messaging groups.
 This project solves that by combining:
 - realtime matching (Supabase),
 - wallet-based identity + trust (Pera Wallet),
@@ -19,9 +19,9 @@ https://www.linkedin.com/posts/madhur-gupta1203_rifthackathon-moneymulingdetecti
 
 ## App ID (Testnet) And Explorer Link
 - Algorand Testnet App ID: 755776791
--App Address: <GLYCD2SYQTCIBJFCCHBFDFLILGB5YLV5DNLOPOFKVYSJ7A67UCNJJTTQ2Q>
+- App Address: `GLYCD2SYQTCIBJFCCHBFDFLILGB5YLV5DNLOPOFKVYSJ7A67UCNJJTTQ2Q`
 
-## Architecture Overview (Smart Contract + Frontend Interaction)
+## Architecture Overview
 1. Passenger signs in, connects Pera Wallet, and books a ride (`status = waiting`).
 2. Driver receives ride in realtime and accepts (`status = accepted`, `driver_id`, `driver_wallet` set).
 3. Passenger wallet sends ALGO to escrow app address; ride escrow state becomes `locked`.
@@ -37,55 +37,70 @@ Trust + settlement:
 - Algorand Testnet escrow app + Pera Wallet signatures.
 
 ## Tech Stack
-- Frontend: Next.js (App Router), React, TypeScript, Tailwind CSS
-- Backend/Data: Supabase (Auth, Postgres, Realtime, RLS)
+- Frontend: Next.js App Router, React, TypeScript, Tailwind CSS
+- Backend/Data: Supabase Auth, Postgres, Realtime, RLS
 - Blockchain: Algorand Testnet
 - Wallet: Pera Wallet (`@perawallet/connect`)
 - Smart Contract Tooling: AlgoKit + Python contract project in `ride-escrow/`
-- Smart Contract Language: PyTeal/AlgoKit Python (see `ride-escrow/projects/ride-escrow/smart_contracts`)
 
-## Installation And Setup Instructions
+## Installation And Setup
 ### 1. Clone
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/madhur12031203/rift-noida-fullstack.git
 cd RIFT/Rift-noida
 ```
 
-### 2. Install dependencies
+### 2. Install Dependencies
 ```bash
 npm install
 ```
 
-### 3. Make .env file with different api keys
+### 3. Configure Environment
+Create `.env.local` with:
+```env
+NEXT_PUBLIC_RIDE_ESCROW_APP_ID=755776791
+NEXT_PUBLIC_RIDE_ESCROW_APP_ADDRESS=GLYCD2SYQTCIBJFCCHBFDFLILGB5YLV5DNLOPOFKVYSJ7A67UCNJJTTQ2Q
 
-### 4. Apply database migrations
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ADMIN_EMAILS=admin@example.com
+
+GEMINI_API_KEY=your-gemini-api-key
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-browser-key
+```
+
+Never commit real `.env.local` values. Keep production secrets in Vercel Environment Variables.
+
+### 4. Apply Database Migrations
 ```bash
 supabase db push
 ```
 
-### 5. Run the app
+### 5. Run The App
 ```bash
 npm run dev
 ```
 
-### 6. Production build check
+### 6. Production Build Check
 ```bash
 npm run build
 ```
 
-
+## Usage Guide
 1. Login as passenger, connect wallet, book a ride.
-2. Login as driver on second laptop/session, connect wallet, accept ride.
+2. Login as driver on a second laptop/session, connect wallet, and accept the ride.
 3. Passenger sees accepted status and escrow lock confirmation.
-4. Passenger/driver completes ride; payment releases.
-
+4. Passenger/driver completes the ride; payment releases.
 
 ## Known Limitations
 - Escrow release path in frontend is demo-safe and should be replaced with full ARC client call in production.
-- Google Places requires API key; without key, location search is gracefully disabled.
+- Google Places requires an API key; without it, location search is gracefully disabled.
 - Current explorer/status text is UI-level; deeper on-chain event indexing is not yet implemented.
-- Notification system is in-app toast only (no push/SMS).
+- Notification system is in-app toast only.
 
 ## Team Members And Roles
-- `<TEAM_MEMBER_1>` - Smart contract and AlgoKit integration testing, deployment
-- `<TEAM_MEMBER_2>` - Frontend and realtime ride UX Supabase schema, RLS, API routes - Product demo, 
+- `<TEAM_MEMBER_1>` - Smart contract, AlgoKit integration, testing, and deployment
+- `<TEAM_MEMBER_2>` - Frontend, realtime ride UX, Supabase schema, RLS, API routes, and product demo
