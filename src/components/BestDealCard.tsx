@@ -17,10 +17,10 @@ function CrownIcon({ className }: { className?: string }) {
 
 export default function BestDealCard({ result }: BestDealCardProps) {
   const iconPath = result.icon ? `/icons/${result.icon}` : null;
-  const duration = result.duration?.replace("~", "") ?? "—";
+  const duration = result.duration?.replace("~", "") ?? "--";
 
   return (
-    <div className="rounded-xl border-2 border-amber-500/50 bg-slate-800/80 p-6 shadow-xl shadow-amber-500/10 backdrop-blur-sm">
+    <div className="rounded-lg border border-amber-500/45 bg-amber-500/10 p-4 shadow-xl shadow-black/20 backdrop-blur-sm">
       <div className="mb-4 inline-block rounded-lg bg-amber-500/20 px-3 py-1.5 text-sm font-semibold text-amber-300 ring-1 ring-amber-500/30">
         Best Deal for You!
       </div>
@@ -60,7 +60,7 @@ export default function BestDealCard({ result }: BestDealCardProps) {
                 <CrownIcon />
               </span>
             </p>
-            <p className="text-3xl font-bold text-slate-100">₹{result.price}</p>
+            <p className="text-3xl font-bold text-slate-100">Rs {result.price}</p>
             <p className="text-sm text-slate-400">Estimated Time: {duration}</p>
           </div>
         </div>

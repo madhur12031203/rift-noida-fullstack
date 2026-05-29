@@ -35,10 +35,10 @@ function PassengerIcon() {
 
 export default function RoleSelector({ onPickRole, isSaving }: RoleSelectorProps) {
   return (
-    <div className="rounded-2xl border border-slate-200/10 bg-white/5 p-6 backdrop-blur-sm">
+    <div className="rounded-lg border border-white/10 bg-slate-900/70 p-5 backdrop-blur">
       <div className="mb-4 text-center">
-        <h3 className="text-xl font-semibold text-slate-100">Choose Your Role</h3>
-        <p className="mt-2 text-sm text-slate-400">Select how you want to use the app</p>
+        <h3 className="text-lg font-semibold text-slate-100">Choose your role</h3>
+        <p className="mt-2 text-sm text-slate-400">Select the workflow for this session.</p>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -46,7 +46,7 @@ export default function RoleSelector({ onPickRole, isSaving }: RoleSelectorProps
           type="button"
           disabled={isSaving}
           onClick={() => void onPickRole("driver")}
-          className="group rounded-2xl border border-cyan-500/30 bg-cyan-500/10 p-6 text-left transition hover:bg-cyan-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="group min-h-[168px] rounded-lg border border-cyan-500/25 bg-cyan-500/10 p-5 text-left transition hover:border-cyan-300/50 hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <div className="mb-3">
             <DriverIcon />
@@ -60,7 +60,7 @@ export default function RoleSelector({ onPickRole, isSaving }: RoleSelectorProps
           type="button"
           disabled={isSaving}
           onClick={() => void onPickRole("passenger")}
-          className="group rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-left transition hover:bg-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="group min-h-[168px] rounded-lg border border-teal-500/25 bg-teal-500/10 p-5 text-left transition hover:border-teal-300/50 hover:bg-teal-500/15 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <div className="mb-3">
             <PassengerIcon />

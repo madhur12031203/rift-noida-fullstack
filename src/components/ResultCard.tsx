@@ -22,12 +22,12 @@ export default function ResultCard({ result, isBestDeal, isSelected, onSelect }:
   const iconPath = result.icon ? `/icons/${result.icon}` : null;
   const isHighlight = isBestDeal || isSelected;
   const cardBg = isHighlight
-    ? "bg-slate-800/80 border-amber-500/50 shadow-lg shadow-amber-500/10"
-    : "bg-slate-800/60 border-slate-600/50";
+    ? "bg-amber-500/10 border-amber-500/45 shadow-lg shadow-black/20"
+    : "bg-slate-950/60 border-white/10";
 
   return (
     <div
-      className={`flex flex-col rounded-xl border-2 p-5 shadow-lg backdrop-blur-sm transition ${cardBg}`}
+      className={`flex flex-col rounded-lg border p-4 shadow-lg backdrop-blur-sm transition ${cardBg}`}
     >
       <div className="mb-3 flex items-center gap-2">
         {iconPath ? (

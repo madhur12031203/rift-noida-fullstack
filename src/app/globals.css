@@ -20,13 +20,15 @@ body {
   min-height: 100vh;
 }
 
-/* Subtle gradient mesh for depth */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16, 185, 129, 0.12), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(59, 130, 246, 0.08), transparent);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.4), rgba(2, 6, 23, 0.92));
   pointer-events: none;
   z-index: 0;
+}
+
+::selection {
+  background: rgba(20, 184, 166, 0.35);
 }

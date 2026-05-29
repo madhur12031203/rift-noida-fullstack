@@ -121,7 +121,7 @@ export default function PassengerRideStatus({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200/10 bg-white/5 p-6 text-center">
+      <div className="rounded-lg border border-white/10 bg-slate-900/70 p-6 text-center">
         <p className="text-sm text-slate-400">Loading your rides...</p>
       </div>
     );
@@ -129,7 +129,7 @@ export default function PassengerRideStatus({
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+      <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
         {error}
       </div>
     );
@@ -145,12 +145,12 @@ export default function PassengerRideStatus({
         {activeRide ? "Current Active Ride" : "Ride History"}
       </h3>
       {paymentMessage && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">
           {paymentMessage}
         </div>
       )}
       {activeRide ? (
-        <article className="rounded-2xl border border-slate-200/10 bg-white/5 p-4">
+        <article className="rounded-lg border border-white/10 bg-slate-900/70 p-4">
           <div className="mb-3 flex items-center justify-between">
             <StatusBadge status={activeRide.status} />
             <span className="text-xs text-slate-400">
@@ -179,7 +179,7 @@ export default function PassengerRideStatus({
                 type="button"
                 onClick={() => void onCompleteRide(activeRide)}
                 disabled={isBusy}
-                className="mt-3 w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-3 w-full rounded-lg bg-teal-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Complete Ride
               </button>
@@ -203,7 +203,7 @@ export default function PassengerRideStatus({
         historyRides.map((ride) => (
           <article
             key={ride.id}
-            className="rounded-2xl border border-slate-200/10 bg-white/5 p-4"
+            className="rounded-lg border border-white/10 bg-slate-900/70 p-4"
           >
             <div className="mb-2 flex items-center justify-between">
               <StatusBadge status={ride.status} />

@@ -226,7 +226,7 @@ export default function CoreRideSharePanel({
 
   if (!profile) {
     return (
-      <section className="rounded-2xl border border-slate-200/10 bg-white/5 p-6 text-center">
+      <section className="rounded-lg border border-white/10 bg-slate-900/70 p-6 text-center">
         <p className="text-sm text-slate-300">Sign in to book or view rides.</p>
       </section>
     );
@@ -240,7 +240,7 @@ export default function CoreRideSharePanel({
     <section className="space-y-4">
       <ToastStack toasts={toasts} />
       {error && (
-        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
           {error}
         </div>
       )}
@@ -254,7 +254,7 @@ export default function CoreRideSharePanel({
             activeRideMessage="You already have an active ride"
             walletConnected={Boolean(walletAddress)}
           />
-          <p className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
+          <p className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
             Payments are locked in an Algorand smart contract escrow and released
             automatically after ride completion.
           </p>

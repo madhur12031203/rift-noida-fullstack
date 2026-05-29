@@ -114,13 +114,13 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
   }
 
   return (
-    <div className="rounded-2xl border border-slate-700/50 bg-slate-800/80 p-6 shadow-2xl backdrop-blur-sm sm:p-8">
+    <div className="rounded-lg border border-white/10 bg-slate-950/80 p-6 shadow-2xl shadow-black/30 backdrop-blur sm:p-8">
       <div className={`mb-4 h-1.5 w-14 rounded-full ${accentClass}`} />
       <h2 className="text-xl font-semibold text-slate-100 sm:text-2xl">{title}</h2>
       <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
 
       {/* Toggle between Sign Up and Sign In */}
-      <div className="mt-6 flex gap-2 rounded-xl border border-slate-600/50 bg-slate-900/50 p-1">
+      <div className="mt-6 flex gap-2 rounded-lg border border-white/10 bg-slate-900/70 p-1">
         <button
           type="button"
           onClick={() => {
@@ -164,7 +164,7 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
-              className="w-full rounded-xl border border-slate-600 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-teal-300/50"
               required={isSignUp}
               disabled={isLoading}
             />
@@ -181,7 +181,7 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
-            className="w-full rounded-xl border border-slate-600 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-teal-300/50"
             required
             disabled={isLoading}
           />
@@ -225,7 +225,7 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={isSignUp ? "Create a password (min. 6 characters)" : "Enter your password"}
-            className="w-full rounded-xl border border-slate-600 bg-slate-900/50 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-teal-300/50"
             required
             minLength={6}
             disabled={isLoading}
@@ -233,7 +233,7 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
         </div>
 
         {error && (
-          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-200">
+          <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-200">
             {error}
           </div>
         )}
@@ -241,7 +241,7 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-lg bg-teal-400 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-teal-950/30 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isLoading
             ? "Processing..."
@@ -262,7 +262,7 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
       <button
         type="button"
         onClick={handleGoogleAuth}
-        className="w-full rounded-xl border border-slate-600 bg-slate-900/50 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-800"
+        className="w-full rounded-lg border border-white/10 bg-slate-900/70 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-800"
       >
         <div className="flex items-center justify-center gap-2">
           <svg className="h-5 w-5" viewBox="0 0 24 24">

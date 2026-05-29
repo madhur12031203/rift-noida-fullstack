@@ -16,6 +16,19 @@ type CompareApiResponse = {
   results: FareResult[];
 };
 
+function AppLoadingState({ label }: { label: string }) {
+  return (
+    <main className="relative isolate min-h-screen text-white">
+      <VideoBackground />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-xl items-center px-6 py-12">
+        <div className="w-full rounded-lg border border-white/10 bg-slate-950/80 p-8 text-center shadow-2xl shadow-black/30 backdrop-blur">
+          <p className="text-sm text-slate-300">{label}</p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [results, setResults] = useState<FareResult[]>([]);
@@ -82,30 +95,12 @@ export default function Home() {
   }
 
   if (isAuthLoading) {
-    return (
-      <main className="relative isolate min-h-screen text-white">
-        <VideoBackground />
-        <div className="relative z-10 mx-auto flex min-h-screen max-w-xl items-center px-6 py-12">
-          <div className="w-full rounded-2xl border border-slate-200/10 bg-white/5 p-8 text-center backdrop-blur-sm">
-            <p className="text-sm text-slate-300">Loading your campus ride dashboard...</p>
-          </div>
-        </div>
-      </main>
-    );
+    return <AppLoadingState label="Loading your campus ride dashboard..." />;
   }
 
   if (!isSignedIn) {
     router.replace("/login");
-    return (
-      <main className="relative isolate min-h-screen text-white">
-        <VideoBackground />
-        <div className="relative z-10 mx-auto flex min-h-screen max-w-xl items-center px-6 py-12">
-          <div className="w-full rounded-2xl border border-slate-200/10 bg-white/5 p-8 text-center backdrop-blur-sm">
-            <p className="text-sm text-slate-300">Redirecting to login...</p>
-          </div>
-        </div>
-      </main>
-    );
+    return <AppLoadingState label="Redirecting to login..." />;
   }
 
   return (
@@ -113,63 +108,90 @@ export default function Home() {
       <VideoBackground />
       <ChatWidget />
 
-      <div className="relative z-10 mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
-        {/* Header Section */}
-        <header className="mb-6 sm:mb-8">
-          <h1 className="text-2xl font-bold text-slate-100 sm:text-3xl">Campus Ride</h1>
-          <p className="mt-1 text-sm text-slate-400 sm:text-base">
-            Book rides, compare fares, and manage your trips
-          </p>
-        </header>
-
-        {/* Wallet Panel */}
-        <div className="mb-6">
-          <WalletPanel onAddressChange={setWalletAddress} />
-        </div>
-
-        {/* Core Realtime Ride Booking: Passenger books → Driver sees instantly */}
-        <div className="mb-8">
-          <h2 className="mb-4 text-lg font-semibold text-slate-100 sm:text-xl">
-            Realtime Ride Booking
-          </h2>
-          <CoreRideSharePanel walletAddress={walletAddress} appAddress={appAddress} />
-        </div>
-
-        {/* Fare Comparison Section */}
-        <section className="mb-8">
-          <h2 className="mb-4 text-lg font-semibold text-slate-100 sm:text-xl">Compare Fares</h2>
-          <div className="mb-6">
-            <LocationForm onSubmit={handleCompare} isLoading={isLoading} />
-          </div>
-
-          {bestDeal && (
-            <div className="mb-6">
-              <BestDealCard result={bestDeal} />
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
+        <header className="mb-5 flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-lg border border-teal-400/25 bg-teal-400/10 text-sm font-black text-teal-200">
+              CR
             </div>
-          )}
-
-          {results.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {results.map((result) => (
-                <ResultCard
-                  key={result.provider}
-                  result={result}
-                  isBestDeal={bestDeal?.provider === result.provider}
-                  isSelected={selectedProvider === result.provider}
-                  onSelect={() => setSelectedProvider(result.provider)}
-                />
-              ))}
-            </div>
-          )}
-
-          {results.length === 0 && !isLoading && (
-            <div className="rounded-2xl border border-slate-200/10 bg-white/5 p-6 text-center">
-              <p className="text-sm text-slate-400">
-                Enter pickup and drop locations, then click <span className="font-semibold text-slate-300">Compare Prices</span>.
+            <div>
+              <h1 className="text-2xl font-semibold tracking-normal text-slate-50 sm:text-3xl">
+                Campus Ride
+              </h1>
+              <p className="mt-0.5 text-sm text-slate-400">
+                Verified campus rides with wallet-backed escrow.
               </p>
             </div>
-          )}
-        </section>
+          </div>
+
+          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-white/10 bg-slate-950/70 text-center shadow-lg shadow-black/20">
+            <div className="px-3 py-2">
+              <p className="text-[11px] uppercase text-slate-500">Network</p>
+              <p className="text-sm font-semibold text-teal-200">Testnet</p>
+            </div>
+            <div className="border-x border-white/10 px-3 py-2">
+              <p className="text-[11px] uppercase text-slate-500">Escrow</p>
+              <p className="text-sm font-semibold text-emerald-200">
+                {appAddress ? "Ready" : "Setup"}
+              </p>
+            </div>
+            <div className="px-3 py-2">
+              <p className="text-[11px] uppercase text-slate-500">Wallet</p>
+              <p className="text-sm font-semibold text-cyan-200">
+                {walletAddress ? "Live" : "Needed"}
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.9fr)]">
+          <section className="rounded-lg border border-white/10 bg-slate-950/75 p-4 shadow-2xl shadow-black/25 backdrop-blur">
+            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase text-teal-300">Realtime dispatch</p>
+                <h2 className="text-xl font-semibold text-slate-50">Book or accept a ride</h2>
+              </div>
+              <p className="text-sm text-slate-400">Wallet required before booking or accepting.</p>
+            </div>
+            <CoreRideSharePanel walletAddress={walletAddress} appAddress={appAddress} />
+          </section>
+
+          <aside className="space-y-5">
+            <WalletPanel onAddressChange={setWalletAddress} />
+
+            <section className="rounded-lg border border-white/10 bg-slate-950/70 p-4 shadow-xl shadow-black/20 backdrop-blur">
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase text-slate-500">Fare tools</p>
+                <h2 className="text-lg font-semibold text-slate-50">Compare fares</h2>
+              </div>
+              <LocationForm onSubmit={handleCompare} isLoading={isLoading} />
+            </section>
+
+            {bestDeal && <BestDealCard result={bestDeal} />}
+
+            {results.length > 0 && (
+              <div className="grid gap-3">
+                {results.map((result) => (
+                  <ResultCard
+                    key={result.provider}
+                    result={result}
+                    isBestDeal={bestDeal?.provider === result.provider}
+                    isSelected={selectedProvider === result.provider}
+                    onSelect={() => setSelectedProvider(result.provider)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {results.length === 0 && !isLoading && (
+              <div className="rounded-lg border border-dashed border-white/10 bg-slate-950/45 p-4 text-center">
+                <p className="text-sm text-slate-400">
+                  Enter pickup and drop locations to compare prices.
+                </p>
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
     </main>
   );

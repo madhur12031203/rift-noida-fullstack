@@ -152,7 +152,7 @@ export default function RealtimeRideList({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200/10 bg-white/5 p-6 text-center">
+      <div className="rounded-lg border border-white/10 bg-slate-900/70 p-6 text-center">
         <p className="text-sm text-slate-400">Loading nearby rides...</p>
       </div>
     );
@@ -161,17 +161,17 @@ export default function RealtimeRideList({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
           {error}
         </div>
       )}
       {paymentMessage && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">
           {paymentMessage}
         </div>
       )}
       {activeRide ? (
-        <article className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+        <article className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="rounded-full bg-cyan-500/20 px-2.5 py-0.5 text-xs font-medium text-cyan-300">
               Current Accepted Ride
@@ -202,7 +202,7 @@ export default function RealtimeRideList({
               type="button"
               onClick={() => void onCompleteRide(activeRide)}
               disabled={isBusy}
-              className="mt-3 w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-3 w-full rounded-lg bg-teal-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Complete Ride
             </button>
@@ -226,7 +226,7 @@ export default function RealtimeRideList({
             </p>
           </div>
           {rides.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200/10 bg-white/5 p-6 text-center">
+            <div className="rounded-lg border border-dashed border-white/10 bg-slate-900/50 p-6 text-center">
               <p className="text-sm text-slate-400">
                 No nearby rides. New bookings will appear here instantly.
               </p>
@@ -236,7 +236,7 @@ export default function RealtimeRideList({
               {rides.map((ride) => (
                 <article
                   key={ride.id}
-                  className="rounded-2xl border border-slate-200/10 bg-white/5 p-4 shadow-sm transition hover:border-slate-300/20"
+                  className="rounded-lg border border-white/10 bg-slate-900/70 p-4 shadow-sm transition hover:border-teal-300/30"
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-300">
@@ -260,7 +260,7 @@ export default function RealtimeRideList({
                     type="button"
                     onClick={() => void handleAcceptRide(ride.id)}
                     disabled={Boolean(isBusy || blockedByActiveRide || !driverWalletAddress)}
-                    className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-lg bg-teal-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Accept Ride
                   </button>
