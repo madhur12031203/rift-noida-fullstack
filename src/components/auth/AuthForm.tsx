@@ -47,37 +47,30 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
       const redirectTo = `${baseUrl}/auth/callback?role=${role}`;
 
       if (isSignUp) {
-        // Sign up
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectTo,
-            data: {
-              full_name: name || email.split("@")[0],
-            },
-          },
+        const response = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            name,
+            role,
+          }),
         });
 
-        if (signUpError) throw signUpError;
+        const result = (await response.json()) as { error?: string };
 
-        if (data.user) {
-          // Create user profile with role
-          await supabase.from("users").upsert({
-            id: data.user.id,
-            name: name || email.split("@")[0],
-            role,
-          });
-
-          // Check if email confirmation is required
-          if (data.session) {
-            // Session exists, redirect immediately
-            router.push(redirectTo);
-          } else {
-            // Email confirmation required
-            setError("Please check your email to confirm your account before signing in.");
-          }
+        if (!response.ok) {
+          throw new Error(result.error || "Unable to create account.");
         }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) throw signInError;
+        router.push(redirectTo);
       } else {
         // Sign in
         const { error: signInError } = await supabase.auth.signInWithPassword({
