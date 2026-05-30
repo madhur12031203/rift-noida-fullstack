@@ -9,7 +9,7 @@ type RoleSelectorProps = {
 
 function DriverIcon() {
   return (
-    <svg className="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="h-6 w-6 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -22,7 +22,7 @@ function DriverIcon() {
 
 function PassengerIcon() {
   return (
-    <svg className="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="h-6 w-6 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -35,10 +35,10 @@ function PassengerIcon() {
 
 export default function RoleSelector({ onPickRole, isSaving }: RoleSelectorProps) {
   return (
-    <div className="rounded-lg border border-white/10 bg-slate-900/70 p-5 backdrop-blur">
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
       <div className="mb-4 text-center">
-        <h3 className="text-lg font-semibold text-slate-100">Choose your role</h3>
-        <p className="mt-2 text-sm text-slate-400">Select the workflow for this session.</p>
+        <h3 className="text-lg font-semibold text-slate-950">Choose your role</h3>
+        <p className="mt-2 text-sm text-slate-600">Select the workflow for this session.</p>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -46,13 +46,13 @@ export default function RoleSelector({ onPickRole, isSaving }: RoleSelectorProps
           type="button"
           disabled={isSaving}
           onClick={() => void onPickRole("driver")}
-          className="group min-h-[168px] rounded-lg border border-cyan-500/25 bg-cyan-500/10 p-5 text-left transition hover:border-cyan-300/50 hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+          className="group min-h-[168px] rounded-lg border border-sky-200 bg-white p-5 text-left shadow-sm transition hover:border-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <div className="mb-3">
             <DriverIcon />
           </div>
-          <p className="text-lg font-semibold text-cyan-100">Driver</p>
-          <p className="mt-1 text-sm text-cyan-200/80">
+          <p className="text-lg font-semibold text-slate-950">Driver</p>
+          <p className="mt-1 text-sm text-slate-600">
             Accept nearby passenger requests or publish your own route.
           </p>
         </button>
@@ -60,13 +60,13 @@ export default function RoleSelector({ onPickRole, isSaving }: RoleSelectorProps
           type="button"
           disabled={isSaving}
           onClick={() => void onPickRole("passenger")}
-          className="group min-h-[168px] rounded-lg border border-teal-500/25 bg-teal-500/10 p-5 text-left transition hover:border-teal-300/50 hover:bg-teal-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+          className="group min-h-[168px] rounded-lg border border-emerald-200 bg-white p-5 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <div className="mb-3">
             <PassengerIcon />
           </div>
-          <p className="text-lg font-semibold text-emerald-100">Passenger</p>
-          <p className="mt-1 text-sm text-emerald-200/80">
+          <p className="text-lg font-semibold text-slate-950">Passenger</p>
+          <p className="mt-1 text-sm text-slate-600">
             Request rides, book listed trips, and pay through escrow.
           </p>
         </button>

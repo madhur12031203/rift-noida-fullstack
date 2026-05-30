@@ -18,11 +18,11 @@ type CompareApiResponse = {
 
 function AppLoadingState({ label }: { label: string }) {
   return (
-    <main className="relative isolate min-h-screen text-white">
+    <main className="relative isolate min-h-screen text-slate-950">
       <VideoBackground />
       <div className="relative z-10 mx-auto flex min-h-screen max-w-xl items-center px-6 py-12">
-        <div className="w-full rounded-lg border border-white/10 bg-slate-950/80 p-8 text-center shadow-2xl shadow-black/30 backdrop-blur">
-          <p className="text-sm text-slate-300">{label}</p>
+        <div className="w-full rounded-lg border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/80">
+          <p className="text-sm text-slate-600">{label}</p>
         </div>
       </div>
     </main>
@@ -104,40 +104,40 @@ export default function Home() {
   }
 
   return (
-    <main className="relative isolate min-h-screen text-white">
+    <main className="relative isolate min-h-screen text-slate-950">
       <VideoBackground />
       <ChatWidget />
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
-        <header className="mb-5 flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <header className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg border border-teal-400/25 bg-teal-400/10 text-sm font-black text-teal-200">
+            <div className="grid h-10 w-10 place-items-center rounded-lg border border-teal-200 bg-teal-50 text-sm font-black text-teal-700">
               CR
             </div>
             <div>
-              <h1 className="text-2xl font-semibold tracking-normal text-slate-50 sm:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
                 Campus Ride
               </h1>
-              <p className="mt-0.5 text-sm text-slate-400">
+              <p className="mt-0.5 text-sm text-slate-600">
                 Verified campus rides with wallet-backed escrow.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-white/10 bg-slate-950/70 text-center shadow-lg shadow-black/20">
+          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-white text-center shadow-sm">
             <div className="px-3 py-2">
               <p className="text-[11px] uppercase text-slate-500">Network</p>
-              <p className="text-sm font-semibold text-teal-200">Testnet</p>
+              <p className="text-sm font-semibold text-teal-700">Testnet</p>
             </div>
-            <div className="border-x border-white/10 px-3 py-2">
+            <div className="border-x border-slate-200 px-3 py-2">
               <p className="text-[11px] uppercase text-slate-500">Escrow</p>
-              <p className="text-sm font-semibold text-emerald-200">
+              <p className="text-sm font-semibold text-emerald-700">
                 {appAddress ? "Ready" : "Setup"}
               </p>
             </div>
             <div className="px-3 py-2">
               <p className="text-[11px] uppercase text-slate-500">Wallet</p>
-              <p className="text-sm font-semibold text-cyan-200">
+              <p className="text-sm font-semibold text-cyan-700">
                 {walletAddress ? "Live" : "Needed"}
               </p>
             </div>
@@ -145,13 +145,13 @@ export default function Home() {
         </header>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.9fr)]">
-          <section className="rounded-lg border border-white/10 bg-slate-950/75 p-4 shadow-2xl shadow-black/25 backdrop-blur">
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/70">
             <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase text-teal-300">Realtime dispatch</p>
-                <h2 className="text-xl font-semibold text-slate-50">Book or accept a ride</h2>
+                <p className="text-xs font-semibold uppercase text-teal-700">Realtime dispatch</p>
+                <h2 className="text-xl font-semibold text-slate-950">Your dashboard</h2>
               </div>
-              <p className="text-sm text-slate-400">Wallet required before booking or accepting.</p>
+              <p className="text-sm text-slate-600">Wallet required before booking or accepting.</p>
             </div>
             <CoreRideSharePanel walletAddress={walletAddress} appAddress={appAddress} />
           </section>
@@ -159,10 +159,10 @@ export default function Home() {
           <aside className="space-y-5">
             <WalletPanel onAddressChange={setWalletAddress} />
 
-            <section className="rounded-lg border border-white/10 bg-slate-950/70 p-4 shadow-xl shadow-black/20 backdrop-blur">
+            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-4">
                 <p className="text-xs font-semibold uppercase text-slate-500">Fare tools</p>
-                <h2 className="text-lg font-semibold text-slate-50">Compare fares</h2>
+                <h2 className="text-lg font-semibold text-slate-950">Compare fares</h2>
               </div>
               <LocationForm onSubmit={handleCompare} isLoading={isLoading} />
             </section>
@@ -184,8 +184,8 @@ export default function Home() {
             )}
 
             {results.length === 0 && !isLoading && (
-              <div className="rounded-lg border border-dashed border-white/10 bg-slate-950/45 p-4 text-center">
-                <p className="text-sm text-slate-400">
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white/70 p-4 text-center">
+                <p className="text-sm text-slate-600">
                   Enter pickup and drop locations to compare prices.
                 </p>
               </div>

@@ -20,14 +20,14 @@ export default function BestDealCard({ result }: BestDealCardProps) {
   const duration = result.duration?.replace("~", "") ?? "--";
 
   return (
-    <div className="rounded-lg border border-amber-500/45 bg-amber-500/10 p-4 shadow-xl shadow-black/20 backdrop-blur-sm">
-      <div className="mb-4 inline-block rounded-lg bg-amber-500/20 px-3 py-1.5 text-sm font-semibold text-amber-300 ring-1 ring-amber-500/30">
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
+      <div className="mb-4 inline-block rounded-lg bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
         Best Deal for You!
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           {iconPath ? (
-            <div className="relative h-14 w-14 overflow-hidden rounded-full bg-slate-700/80 shadow-lg ring-2 ring-slate-600/50">
+            <div className="relative h-14 w-14 overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-amber-200">
               <Image
                 src={iconPath}
                 alt={result.provider}
@@ -42,26 +42,26 @@ export default function BestDealCard({ result }: BestDealCardProps) {
                 }}
               />
               <span
-                className="absolute inset-0 hidden items-center justify-center text-xl font-bold text-slate-400"
+                className="absolute inset-0 hidden items-center justify-center text-xl font-bold text-slate-500"
                 style={{ display: "none" }}
               >
                 {result.provider[0]}
               </span>
             </div>
           ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-700/80 text-xl font-bold text-slate-400 shadow-lg ring-2 ring-slate-600/50">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-xl font-bold text-slate-500 shadow-sm ring-1 ring-amber-200">
               {result.provider[0]}
             </div>
           )}
           <div>
-            <p className="flex items-center gap-2 text-xl font-bold text-slate-100">
+            <p className="flex items-center gap-2 text-xl font-bold text-slate-950">
               {result.provider}
               <span className="text-amber-400">
                 <CrownIcon />
               </span>
             </p>
-            <p className="text-3xl font-bold text-slate-100">Rs {result.price}</p>
-            <p className="text-sm text-slate-400">Estimated Time: {duration}</p>
+            <p className="text-3xl font-bold text-slate-950">Rs {result.price}</p>
+            <p className="text-sm text-slate-600">Estimated Time: {duration}</p>
           </div>
         </div>
         <a
