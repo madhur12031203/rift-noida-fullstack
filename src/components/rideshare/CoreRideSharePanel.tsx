@@ -99,15 +99,21 @@ export default function CoreRideSharePanel({
       setIsRoleSaving(true);
       setError(null);
       try {
-        await updateRole(profile.id, nextRole);
-        await refreshProfile();
+        const nextProfile = await updateRole(profile.id, nextRole);
+        setProfile(nextProfile);
+        if (nextProfile.role === "passenger") {
+          const activeRide = await fetchPassengerActiveRide(nextProfile.id);
+          setPassengerHasActiveRide(Boolean(activeRide));
+        } else {
+          setPassengerHasActiveRide(false);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to save role");
       } finally {
         setIsRoleSaving(false);
       }
     },
-    [profile, refreshProfile]
+    [profile]
   );
 
   const handleBookRide = useCallback(

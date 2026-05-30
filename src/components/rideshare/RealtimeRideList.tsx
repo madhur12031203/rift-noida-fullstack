@@ -40,6 +40,7 @@ export default function RealtimeRideList({
   const [driverId, setDriverId] = useState<string | null>(null);
   const [activeRide, setActiveRide] = useState<RideBookingRow | null>(null);
   const [blockedByActiveRide, setBlockedByActiveRide] = useState(false);
+  const [rejectedRideIds, setRejectedRideIds] = useState<string[]>([]);
 
   const refreshDriverRideState = useCallback(
     async (nextDriverId: string) => {
@@ -67,6 +68,7 @@ export default function RealtimeRideList({
   const addRideWithDistance = useCallback(
     (ride: RideBookingRow) => {
       if (ride.status !== "waiting" || ride.driver_id) return;
+      if (rejectedRideIds.includes(ride.id)) return;
       const distanceKm = haversineDistanceKm(
         driverLat,
         driverLng,
@@ -79,7 +81,7 @@ export default function RealtimeRideList({
         return [{ ...ride, distanceKm }, ...prev].sort((a, b) => a.distanceKm - b.distanceKm);
       });
     },
-    [driverLat, driverLng]
+    [driverLat, driverLng, rejectedRideIds]
   );
 
   const handleRideUpdate = useCallback(
@@ -107,13 +109,14 @@ export default function RealtimeRideList({
               ride.origin_lng
             ),
           }))
+          .filter((ride) => !rejectedRideIds.includes(ride.id))
           .filter((ride) => ride.distanceKm <= MAX_DISTANCE_KM)
           .sort((a, b) => a.distanceKm - b.distanceKm);
         setRides(withDistance);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load rides"))
       .finally(() => setLoading(false));
-  }, [driverLat, driverLng]);
+  }, [driverLat, driverLng, rejectedRideIds]);
 
   useEffect(() => {
     const unsubscribe = subscribeToRideBookings(addRideWithDistance, handleRideUpdate);
@@ -148,6 +151,15 @@ export default function RealtimeRideList({
       }
     },
     [blockedByActiveRide, driverId, driverWalletAddress, onToast, refreshDriverRideState]
+  );
+
+  const handleRejectRide = useCallback(
+    (rideId: string) => {
+      setRejectedRideIds((prev) => (prev.includes(rideId) ? prev : [...prev, rideId]));
+      setRides((prev) => prev.filter((ride) => ride.id !== rideId));
+      onToast("Ride hidden from your queue", "info");
+    },
+    [onToast]
   );
 
   if (loading) {
@@ -218,7 +230,7 @@ export default function RealtimeRideList({
           <div>
             <h2 className="text-xl font-bold text-slate-950">Available Nearby Rides</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Rides within {MAX_DISTANCE_KM} km. Updates in realtime.
+              Review requests within {MAX_DISTANCE_KM} km, then accept or reject them.
             </p>
             <p className="mt-2 text-xs text-cyan-700">
               Payments are locked in an Algorand smart contract escrow and released
@@ -256,14 +268,24 @@ export default function RealtimeRideList({
                       {ride.destination_place_name || "Destination location"}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleAcceptRide(ride.id)}
-                    disabled={Boolean(isBusy || blockedByActiveRide || !driverWalletAddress)}
-                    className="w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Accept Ride
-                  </button>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleAcceptRide(ride.id)}
+                      disabled={Boolean(isBusy || blockedByActiveRide || !driverWalletAddress)}
+                      className="rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRejectRide(ride.id)}
+                      disabled={Boolean(isBusy)}
+                      className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                  </div>
                   {blockedByActiveRide && (
                     <p className="mt-2 text-xs text-amber-700">Finish your current ride first</p>
                   )}
