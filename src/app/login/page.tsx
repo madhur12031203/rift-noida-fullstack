@@ -6,41 +6,42 @@ import { useEffect, useState } from "react";
 import VideoBackground from "@/components/VideoBackground";
 import { createClient } from "@/lib/supabase/client";
 
+const AUTH_CHECK_TIMEOUT_MS = 6000;
+
+function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => reject(new Error(message)), AUTH_CHECK_TIMEOUT_MS);
+
+    promise
+      .then(resolve)
+      .catch(reject)
+      .finally(() => window.clearTimeout(timeoutId));
+  });
+}
+
 export default function LoginPage() {
   const router = useRouter();
-  const [isChecking, setIsChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
       const supabase = createClient();
-      void supabase.auth
-        .getUser()
+      void withTimeout(
+        supabase.auth.getUser(),
+        "Login check timed out. Check your internet connection and Supabase settings."
+      )
         .then(({ data }) => {
           if (data.user) {
             router.replace("/");
-          } else {
-            setIsChecking(false);
           }
         })
         .catch((err: unknown) => {
           setError(err instanceof Error ? err.message : "Unable to check login status.");
-          setIsChecking(false);
         });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unable to check login status.");
-      setIsChecking(false);
     }
   }, [router]);
-
-  if (isChecking) {
-    return (
-      <main className="relative isolate flex min-h-screen flex-col items-center justify-center px-6">
-        <VideoBackground />
-        <div className="relative z-10 text-sm text-slate-400">Loading...</div>
-      </main>
-    );
-  }
 
   return (
     <main className="relative isolate flex min-h-screen flex-col items-center justify-center px-6">

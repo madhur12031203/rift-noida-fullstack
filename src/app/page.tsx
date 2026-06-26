@@ -16,6 +16,19 @@ type CompareApiResponse = {
   results: FareResult[];
 };
 
+const AUTH_CHECK_TIMEOUT_MS = 6000;
+
+function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => reject(new Error(message)), AUTH_CHECK_TIMEOUT_MS);
+
+    promise
+      .then(resolve)
+      .catch(reject)
+      .finally(() => window.clearTimeout(timeoutId));
+  });
+}
+
 function AppLoadingState({ label }: { label: string }) {
   return (
     <main className="relative isolate min-h-screen text-slate-950">
@@ -41,21 +54,42 @@ export default function Home() {
   const appAddress = process.env.NEXT_PUBLIC_RIDE_ESCROW_APP_ADDRESS ?? "";
 
   useEffect(() => {
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    void supabase.auth.getUser().then(({ data }) => {
-      setIsSignedIn(Boolean(data.user));
+      void withTimeout(
+        supabase.auth.getSession(),
+        "Login check timed out. Check your internet connection and Supabase settings."
+      )
+        .then(({ data }) => {
+          setIsSignedIn(Boolean(data.session?.user));
+        })
+        .catch(() => {
+          setIsSignedIn(false);
+        })
+        .finally(() => {
+          setIsAuthLoading(false);
+        });
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setIsSignedIn(Boolean(session?.user));
+        setIsAuthLoading(false);
+      });
+
+      return () => subscription.unsubscribe();
+    } catch {
+      setIsSignedIn(false);
       setIsAuthLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsSignedIn(Boolean(session?.user));
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
+
+  useEffect(() => {
+    if (!isAuthLoading && !isSignedIn) {
+      router.replace("/login");
+    }
+  }, [isAuthLoading, isSignedIn, router]);
 
   const bestDeal =
     results.length > 0
@@ -99,7 +133,6 @@ export default function Home() {
   }
 
   if (!isSignedIn) {
-    router.replace("/login");
     return <AppLoadingState label="Redirecting to login..." />;
   }
 
