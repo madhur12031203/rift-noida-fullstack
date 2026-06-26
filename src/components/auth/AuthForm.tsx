@@ -11,6 +11,21 @@ type AuthFormProps = {
   accentClass: string;
 };
 
+async function readJsonResponse(response: Response): Promise<{ error?: string }> {
+  const text = await response.text();
+  if (!text.trim()) return {};
+
+  try {
+    return JSON.parse(text) as { error?: string };
+  } catch {
+    return {
+      error: response.ok
+        ? "Received an invalid response from the server."
+        : text.slice(0, 200) || "Unable to create account.",
+    };
+  }
+}
+
 export default function AuthForm({ role, title, subtitle, accentClass }: AuthFormProps) {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -58,7 +73,7 @@ export default function AuthForm({ role, title, subtitle, accentClass }: AuthFor
           }),
         });
 
-        const result = (await response.json()) as { error?: string };
+        const result = await readJsonResponse(response);
 
         if (!response.ok) {
           throw new Error(result.error || "Unable to create account.");
